@@ -56,3 +56,13 @@ housing/
 
 # Logs
 *.log
+
+# Old Dev-Mate prototype
+llm.py
+main.py
+tools.py
+workspace/# Old Dev-Mate prototype
+llm.py
+main.py
+tools.py
+workspace/
