@@ -1,0 +1,58 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.devmate/backups/
+.devmate/history.jsonl
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Dev-Mate local state
+.devmate/
+
+# Test/demo projects
+housing/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+.venv/
+
+# Dev-Mate local state
+.devmate/
+
+# Local generated/test projects
+housing/
+.housing_model/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
