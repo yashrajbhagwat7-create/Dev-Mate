@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get in Touch | Dev-Mate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0a0a0a;
+            --surface: #141414;
+            --surface-2: #1e1e1e;
+            --border: #2a2a2a;
+            --text: #e8e8e8;
+            --text-muted: #777;
+            --accent: #5eead4;
+            --accent-2: #f97316;
+            --accent-glow: rgba(94, 234, 212, 0.15);
+            --error: #ef4444;
+            --success: #22c55e;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-grid {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(rgba(94, 234, 212, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(94, 234, 212, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: 0;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(60px, 60px); }
+        }
+
+        /* Floating orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            z-index: 0;
+            animation: orbFloat 15s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 500px; height: 500px;
+            background: var(--accent);
+            top: -200px; right: -200px;
+            opacity: 0.15;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 400px; height: 400px;
+            background: var(--accent-2);
+            bottom: -150px; left: -150px;
+            opacity: 0.1;
+            animation-delay: -5s;
+        }
+
+        .orb-3 {
+            width: 300px; height: 300px;
+            background: var(--accent);
+            top: 50%; left: 50%;
+            opacity: 0.08;
+            animation-delay: -10s;
+        }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -40px) scale(1.05); }
+            50% { transform: translate(-20px, 20px) scale(0.95); }
+            75% { transform: translate(15px, 15px) scale(1.02); }
+        }
+
+        /* Header */
+        header {
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 1rem 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+
+        header.scrolled { background: rgba(10, 10, 10, 0.95); }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .logo span { color: var(--accent-2); }
+
+        .nav-links { display: flex; list-style: none; gap: 2rem; }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px; left: 0;
+            width: 0; height: 2px;
+            background: var(--accent);
+            transition: width 0.3s;
+        }
+
+        .nav-links a:hover { color: var(--text); }
+        .nav-links a:hover::after { width: 100%; }
+
+        /* Main Content */
+        main {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            padding: 120px 24px 60px;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* Page Header */
+        .page-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .page-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+        }
+
+        .page-title {
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 1rem;
+        }
+
+        .page-subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: start;
+        }
+
+        /* Contact Info */
+        .contact-info h3 {
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            color: var(--text);
+        }
+
+        .contact-info p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            line-height: 1.8;
+        }
+
+        .contact-methods {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .contact-method {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .contact-method:hover {
+            border-color: var(--accent);
+            transform: translateX(4px);
+            background: var(--surface-2);
+        }
+
+        .contact-method .icon {
+            width: 44px; height: 44px;
+            background: var(--surface-2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .contact-method h4 { font-size: 0.9rem; margin-bottom: 2px; }
+        .contact-method p { margin: 0; font-size: 0.85rem; color: var(--accent); }
+
+        /* GitHub Card */
+        .github-card {
+            margin-top: 2rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--surface) 0%, #1a1f2e 100%);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .github-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        }
+
+        .github-card h4 { font-size: 1rem; margin-bottom: 0.5rem; }
+        .github-card p { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-size: 0.9rem; }
+        .github-card .repo-stats {
+            display: flex; gap: 1.5rem; margin-top: 1rem;
+            font-size: 0.8rem; color: var(--text-muted);
+        }
+        .github-card .repo-stats span { display: flex; align-items: center; gap: 4px; }
+
+        /* Form */
+        .form-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            position: relative;
+        }
+
+        .form-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            border-radius: 16px 16px 0 0;
+        }
+
+        .form-group { margin-bottom: 1.5rem; }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .form-group label .required { color: var(--accent); }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s;
+            outline: none;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .form-group input.error,
+        .form-group textarea.error {
+            border-color: var(--error);
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-error {
+            color: var(--error);
+            font-size: 0.8rem;
+            margin-top: 0.4rem;
+            display: none;
+        }
+
+        .form-error.show { display: block; }
+
+        /* Submit button */
+        .btn-submit {
+            width: 100%;
+            padding: 1rem 2rem;
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-submit:hover {
+            background: var(--accent-2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(94, 234, 212, 0.2);
+        }
+
+        .btn-submit:active { transform: translateY(0); }
+
+        .btn-submit.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn-submit.loading::after {
+            content: '';
+            width: 18px; height: 18px;
+            border: 2px solid transparent;
+            border-top-color: var(--bg);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Success message */
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+
+        .success-message.show { display: block; }
+
+        .success-icon {
+            width: 80px; height: 80px;
+            background: var(--accent-glow);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            animation: successPop 0.5s ease;
+        }
+
+        @keyframes successPop {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .success-icon svg { width: 40px; height: 40px; stroke: var(--accent); }
+
+        .success-message h3 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .success-message p { color: var(--text-muted); }
+
+        /* Footer */
+        footer {
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 2rem 24px;
+            margin-top: 60px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-content {
+            max-width: 1200px; margin: 0 auto;
+            display: flex; justify-content: space-between;
+            align-items: center; flex-wrap: wrap; gap: 1rem;
+        }
+
+        footer p { color: var(--text-muted); font-size: 0.9rem; }
+
+        .footer-links { display: flex; gap: 1.5rem; list-style: none; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; transition: color 0.3s; }
+        .footer-links a:hover { color: var(--accent); }
+
+        /* Scroll reveal */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+
+        @media (max-width: 768px) {
+            .content-grid { grid-template-columns: 1fr; gap: 2rem; }
+            .form-card { padding: 1.5rem; }
+            main { padding: 100px 16px 40px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <header id="header">
+        <nav>
+            <a href="portfolio.html" class="logo">dev<span>-</span>mate</a>
+            <ul class="nav-links">
+                <li><a href="portfolio.html">Home</a></li>
+                <li><a href="contact.html" style="color: var(--accent);">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="page-header reveal">
+                <p class="page-label">// Get in Touch</p>
+                <h1 class="page-title">Let's build something worth building</h1>
+                <p class="page-subtitle">Have a project, idea, or just want to talk shop? Drop me a message and I'll get back to you within 24 hours.</p>
+            </div>
+
+            <div class="content-grid">
+                <div class="contact-info">
+                    <h3 class="reveal">Why reach out?</h3>
+                    <p class="reveal reveal-delay-1">I'm currently available for freelance work, open-source collaborations, and full-time opportunities. Whether it's a bug, a feature request, or just a hello &mdash; I read every message.</p>
+                    
+                    <div class="contact-methods">
+                        <a href="mailto:hello@dev-mate.ai" class="contact-method reveal">
+                            <div class="icon">&#9993;</div>
+                            <div>
+                                <h4>Email</h4>
+                                <p>hello@dev-mate.ai</p>
+                            </div>
+                        </a>
+                        <a href="https://github.com/dev-mate/dev-mate" target="_blank" rel="noopener" class="contact-method reveal reveal-delay-1">
+                            <div class="icon">&#9881;</div>
+                            <div>
+                                <h4>GitHub</h4>
+                                <p>github.com/dev-mate/dev-mate</p>
+                            </div>
+                        </a>
+                        <a href="https://linkedin.com/in/dev-mate" target="_blank" rel="noopener" class="contact-method reveal reveal-delay-2">
+                            <div class="icon">&#128100;</div>
+                            <div>
+                                <h4>LinkedIn</h4>
+                                <p>linkedin.com/in/dev-mate</p>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="github-card reveal reveal-delay-3">
+                        <h4>Repository</h4>
+                        <p>github.com/dev-mate/dev-mate</p>
+                        <div class="repo-stats">
+                            <span>&#8986; Public</span>
+                            <span>&#9889; Stars</span>
+                            <span>&#9989; Open Issues</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-card reveal">
+                    <form id="contactForm" style="display: block;">
+                        <div class="form-group">
+                            <label for="name">Name <span class="required">*</span></label>
+                            <input type="text" id="name" name="name" placeholder="Jane Developer" required>
+                            <p class="form-error">Please enter your name</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email <span class="required">*</span></label>
+                            <input type="email" id="email" name="email" placeholder="jane@example.com" required>
+                            <p class="form-error">Please enter a valid email</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="subject">Subject</label>
+                            <input type="text" id="subject" name="subject" placeholder="What's this about?">
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Message <span class="required">*</span></label>
+                            <textarea id="message" name="message" placeholder="Tell me about your project, idea, or just say hello..." required></textarea>
+                            <p class="form-error">Please enter your message</p>
+                        </div>
+                        <button type="submit" class="btn-submit" id="submitBtn">Send Message</button>
+                    </form>
+
+                    <div class="success-message" id="successMessage">
+                        <div class="success-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 6L9 17l-5-5"/>
+                            </svg>
+                        </div>
+                        <h3>Message sent!</h3>
+                        <p>I'll get back to you within 24 hours.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2024 Dev-Mate. Built with care for developers, by developers.</p>
+            <ul class="footer-links">
+                <li><a href="portfolio.html">Portfolio</a></li>
+                <li><a href="https://github.com/dev-mate/dev-mate" target="_blank" rel="noopener">GitHub</a></li>
+            </ul>
+        </div>
+    </footer>
+
+    <script>
+        // Scroll reveal
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.15 });
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // Header scroll effect
+        const header = document.getElementById('header');
+        window.addEventListener('scroll', () => {
+            header.classList.toggle('scrolled', window.scrollY > 50);
+        });
+
+        // Form validation and submission
+        const form = document.getElementById('contactForm');
+        const successMessage = document.getElementById('successMessage');
+        const submitBtn = document.getElementById('submitBtn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Validate
+            let valid = true;
+            const name = document.getElementById('name');
+            const email = document.getElementById('email');
+            const message = document.getElementById('message');
+            const errors = document.querySelectorAll('.form-error');
+            errors.forEach(err => err.classList.remove('show'));
+
+            if (!name.value.trim()) {
+                name.classList.add('error');
+                name.nextElementSibling.classList.add('show');
+                valid = false;
+            }
+            if (!email.value.trim() || !email.value.includes('@')) {
+                email.classList.add('error');
+                email.nextElementSibling.classList.add('show');
+                valid = false;
+            }
+            if (!message.value.trim()) {
+                message.classList.add('error');
+                message.nextElementSibling.classList.add('show');
+                valid = false;
+            }
+
+            if (!valid) return;
+
+            // Simulate sending
+            submitBtn.classList.add('loading');
+            submitBtn.textContent = 'Sending';
+
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            form.style.display = 'none';
+            successMessage.classList.add('show');
+        });
+
+        // Clear errors on input
+        document.querySelectorAll('input, textarea').forEach(el => {
+            el.addEventListener('input', () => {
+                el.classList.remove('error');
+                const err = el.nextElementSibling;
+                if (err && err.classList.contains('form-error')) {
+                    err.classList.remove('show');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
