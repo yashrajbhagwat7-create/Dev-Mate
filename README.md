@@ -1,63 +1,93 @@
 # Dev-Mate
 
-A lightweight, multi-provider AI software-engineering agent for Windows/Linux/macOS.
+A lightweight, local-first AI software engineering agent for Windows, Linux, and macOS.
 
-## What it does
-- OpenRouter + Google Gemini provider modes
-- Reads, creates, edits and deletes project files
-- Searches project files
-- Executes commands and Python
-- Runs tests
-- Inspects git diff/status
-- Human approval before risky actions
-- Engineering loop: inspect -> plan -> edit -> execute -> diagnose -> verify -> checkpoint
-- Every engineering iteration pauses for user approval by default
-- Project-local `.devmate/` state and backups
+Dev-Mate helps developers inspect, understand, modify, run, test, and debug real software projects through natural language.
 
-## Quick start (Windows PowerShell)
+It is designed to be lightweight enough for low-resource machines while keeping the developer in control of what happens to their code.
 
-```powershell
-cd H:\dev_assistant\Dev-Mate
-py -3.13 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-Copy-Item .env.example .env
-notepad .env
-python -m devmate
-```
+---
 
-Or install the launcher:
+## Why Dev-Mate?
 
-```powershell
-pip install -e .
-devmate
-```
+Modern AI coding agents can write and modify code, but they can also make large changes without enough context or user control.
 
-## API keys
-Set either or both:
+Dev-Mate is built around a different principle:
 
-```env
-OPENROUTER_API_KEY=...
-GOOGLE_API_KEY=...
-```
+> **Understand the project → propose work → make controlled changes → verify the result → keep the developer in control.**
 
-OpenRouter uses its OpenAI-compatible chat-completions API. Gemini uses Google's `generateContent` function-calling API.
+The agent can work with an existing project rather than requiring the developer to copy code into a chat.
 
-## Modes
-- `ask`: answer/explain, tools available but edits/commands ask for approval.
-- `edit`: perform requested edits; risky actions still ask.
-- `engineer`: iterate toward a goal and pause after every iteration.
-- `autonomous`: same loop with higher iteration limit; it still pauses at checkpoints unless `AUTO_APPROVE_CHECKPOINTS=true`.
+---
 
-## Important safety model
-The model never executes a tool itself. It requests a structured tool call; Dev-Mate validates permissions, executes the local function, and returns the result to the model.
+## What Dev-Mate Can Do
 
-For safety, delete, shell commands, package installation and git push require approval by default.
+### Project understanding
 
-## Example
+- Inspect the current project
+- List project files
+- Read source files
+- Search across project files
+- Build a project summary
+- Maintain project-local memory
+- Track recent development activity
+
+### Code operations
+
+- Create files
+- Edit existing files
+- Delete files with approval
+- Create directories when required
+- Back up files before modification
+
+### Development operations
+
+- Execute shell commands
+- Run Python programs
+- Run tests and checks
+- Inspect `git status`
+- Inspect `git diff`
+- Diagnose command/test failures
+- Iterate on engineering tasks
+
+### AI providers
+
+Dev-Mate currently supports:
+
+- OpenRouter
+- Google Gemini
+
+The provider can be selected when starting Dev-Mate or changed during a session.
+
+---
+
+## How It Works
+
+Dev-Mate follows an agentic development loop:
 
 ```text
-devmate > Analyze this project and improve the Random Forest pipeline.
-```
-
-Dev-Mate will inspect the project, propose an iteration, make changes, run tests, report the result, and ask whether to continue.
+User Request
+     ↓
+Understand Task
+     ↓
+Inspect Relevant Project Files
+     ↓
+Build Context
+     ↓
+AI Reasoning
+     ↓
+Tool Call
+     ↓
+Permission Check
+     ↓
+Execute Action
+     ↓
+Inspect Result
+     ↓
+Test / Verify
+     ↓
+Diagnose & Fix if Needed
+     ↓
+Checkpoint
+     ↓
+User Decides What Happens Next
