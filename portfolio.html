@@ -3,55 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dev-Mate | AI Software Engineering Agent</title>
+    <title>Dev-Mate | Autonomous AI Software Engineering Agent</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            --bg: #0f0f0f;
-            --surface: #1a1a1a;
-            --surface-2: #242424;
-            --border: #2a2a2a;
-            --text: #e8e8e8;
-            --text-muted: #888;
+            --bg: #090a0f;
+            --surface: rgba(18, 20, 29, 0.7);
+            --surface-card: rgba(22, 25, 38, 0.85);
+            --surface-hover: rgba(30, 35, 54, 0.95);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(94, 234, 212, 0.35);
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
             --accent: #5eead4;
+            --accent-glow: rgba(94, 234, 212, 0.2);
             --accent-2: #f97316;
-            --accent-glow: rgba(94, 234, 212, 0.15);
+            --accent-2-glow: rgba(249, 115, 22, 0.2);
+            --code-bg: #0c0e17;
+            --success: #10b981;
+            --warn: #f59e0b;
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
         }
 
         html { scroll-behavior: smooth; }
 
         body {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
             line-height: 1.6;
             color: var(--text);
             background: var(--bg);
             overflow-x: hidden;
-            cursor: default;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(94, 234, 212, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(249, 115, 22, 0.04) 0%, transparent 40%);
+            background-attachment: fixed;
         }
 
-        /* Custom cursor glow */
+        /* Ambient Glow & Interactive Canvas */
+        #particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
         .cursor-glow {
-            width: 300px;
-            height: 300px;
+            width: 380px;
+            height: 380px;
             background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
             border-radius: 50%;
             position: fixed;
             pointer-events: none;
-            z-index: 9999;
+            z-index: 1;
             transform: translate(-50%, -50%);
-            transition: opacity 0.3s;
             mix-blend-mode: screen;
+            opacity: 0.8;
+            transition: opacity 0.3s;
         }
 
-        /* Navigation */
+        /* Layout Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Header Navigation */
         header {
-            background: rgba(15, 15, 15, 0.85);
+            background: rgba(9, 10, 15, 0.8);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            padding: 1rem 0;
+            padding: 1.1rem 0;
             position: fixed;
             width: 100%;
             top: 0;
@@ -61,8 +94,9 @@
         }
 
         header.scrolled {
-            background: rgba(15, 15, 15, 0.95);
-            box-shadow: 0 4px 30px rgba(0,0,0,0.3);
+            background: rgba(9, 10, 15, 0.95);
+            border-bottom-color: rgba(94, 234, 212, 0.15);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
         nav {
@@ -76,11 +110,24 @@
 
         .logo {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 1.25rem;
+            font-size: 1.35rem;
             font-weight: 700;
             color: var(--accent);
             text-decoration: none;
             letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .logo .tag {
+            font-size: 0.7rem;
+            background: rgba(94, 234, 212, 0.15);
+            color: var(--accent);
+            padding: 2px 7px;
+            border-radius: 6px;
+            border: 1px solid rgba(94, 234, 212, 0.3);
+            text-transform: uppercase;
         }
 
         .logo span { color: var(--accent-2); }
@@ -88,7 +135,7 @@
         .nav-links {
             display: flex;
             list-style: none;
-            gap: 2rem;
+            gap: 2.2rem;
             align-items: center;
         }
 
@@ -96,9 +143,13 @@
             text-decoration: none;
             color: var(--text-muted);
             font-weight: 500;
-            font-size: 0.9rem;
-            transition: color 0.3s;
+            font-size: 0.95rem;
+            transition: all 0.25s ease;
             position: relative;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--text);
         }
 
         .nav-links a::after {
@@ -108,109 +159,77 @@
             left: 0;
             width: 0;
             height: 2px;
-            background: var(--accent);
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
             transition: width 0.3s ease;
         }
 
-        .nav-links a:hover { color: var(--text); }
         .nav-links a:hover::after { width: 100%; }
 
         .nav-cta {
-            background: var(--accent);
-            color: var(--bg) !important;
-            padding: 0.5rem 1.25rem;
-            border-radius: 6px;
-            font-weight: 600;
+            background: linear-gradient(135deg, var(--accent), #2dd4bf);
+            color: #042f2e !important;
+            padding: 0.55rem 1.3rem;
+            border-radius: var(--radius-sm);
+            font-weight: 600 !important;
+            transition: transform 0.2s, box-shadow 0.2s !important;
         }
 
         .nav-cta::after { display: none !important; }
 
-        .nav-cta:hover { background: var(--accent-2); color: var(--bg) !important; }
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(94, 234, 212, 0.4);
+        }
 
-        /* Hero */
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px;
+        }
+
+        .mobile-toggle span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background: var(--text);
+            margin: 5px 0;
+            transition: 0.3s;
+        }
+
+        /* Hero Section */
         .hero {
             min-height: 100vh;
             display: flex;
             align-items: center;
-            justify-content: center;
-            padding: 100px 24px 60px;
+            padding: 130px 24px 70px;
             position: relative;
+            z-index: 2;
         }
 
-        .hero-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 3.5rem;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
             width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: 0;
-        }
-
-        .hero-bg .orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.4;
-            animation: float 20s ease-in-out infinite;
-        }
-
-        .hero-bg .orb:nth-child(1) {
-            width: 400px;
-            height: 400px;
-            background: var(--accent);
-            top: -100px;
-            right: -100px;
-            animation-delay: 0s;
-        }
-
-        .hero-bg .orb:nth-child(2) {
-            width: 300px;
-            height: 300px;
-            background: var(--accent-2);
-            bottom: -50px;
-            left: -50px;
-            animation-delay: -7s;
-        }
-
-        .hero-bg .orb:nth-child(3) {
-            width: 200px;
-            height: 200px;
-            background: var(--accent);
-            top: 50%;
-            left: 50%;
-            animation-delay: -14s;
-            opacity: 0.2;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            25% { transform: translate(30px, -30px) scale(1.05); }
-            50% { transform: translate(-20px, 20px) scale(0.95); }
-            75% { transform: translate(15px, 15px) scale(1.02); }
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 1;
-            max-width: 800px;
-            text-align: center;
         }
 
         .hero-badge {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            background: var(--surface);
-            border: 1px solid var(--border);
+            gap: 10px;
+            background: rgba(94, 234, 212, 0.08);
+            border: 1px solid rgba(94, 234, 212, 0.25);
             padding: 6px 16px;
             border-radius: 100px;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             font-family: 'JetBrains Mono', monospace;
             color: var(--accent);
-            margin-bottom: 2rem;
-            opacity: 0;
-            animation: fadeSlideIn 0.6s ease 0.2s forwards;
+            margin-bottom: 1.8rem;
         }
 
         .hero-badge .pulse {
@@ -218,122 +237,207 @@
             height: 8px;
             background: var(--accent);
             border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent);
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
             0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.8); }
+            50% { opacity: 0.4; transform: scale(0.85); }
         }
 
         .hero h1 {
-            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-size: clamp(2.8rem, 5.5vw, 4.4rem);
             font-weight: 700;
-            line-height: 1.1;
-            margin-bottom: 1.5rem;
-            letter-spacing: -2px;
-            opacity: 0;
-            animation: fadeSlideIn 0.8s ease 0.4s forwards;
+            line-height: 1.12;
+            margin-bottom: 1.4rem;
+            letter-spacing: -1.5px;
         }
 
-        .hero h1 .gradient-text {
-            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        .gradient-text {
+            background: linear-gradient(135deg, var(--accent) 0%, #38bdf8 50%, var(--accent-2) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
         .hero-subtitle {
-            font-size: 1.25rem;
-            color: var(--text-muted);
-            max-width: 550px;
-            margin: 0 auto 1rem;
-            opacity: 0;
-            animation: fadeSlideIn 0.8s ease 0.6s forwards;
+            font-size: 1.22rem;
+            color: #cbd5e1;
+            margin-bottom: 1rem;
+            font-weight: 400;
         }
 
         .hero-desc {
-            font-size: 1rem;
             color: var(--text-muted);
-            max-width: 500px;
-            margin: 0 auto 2.5rem;
-            opacity: 0;
-            animation: fadeSlideIn 0.8s ease 0.8s forwards;
+            font-size: 1rem;
+            line-height: 1.7;
+            margin-bottom: 2.2rem;
+            max-width: 580px;
         }
 
         .hero-actions {
             display: flex;
-            gap: 1rem;
-            justify-content: center;
+            gap: 1.2rem;
             flex-wrap: wrap;
-            opacity: 0;
-            animation: fadeSlideIn 0.8s ease 1s forwards;
+            margin-bottom: 2.5rem;
         }
 
-        @keyframes fadeSlideIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Buttons */
         .btn {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 0.875rem 2rem;
-            border-radius: 8px;
-            font-weight: 600;
+            gap: 10px;
+            padding: 0.8rem 1.6rem;
+            border-radius: var(--radius-sm);
             font-size: 0.95rem;
+            font-weight: 600;
             text-decoration: none;
-            transition: all 0.3s ease;
+            transition: all 0.25s ease;
             cursor: pointer;
-            border: none;
-            font-family: inherit;
         }
 
         .btn-primary {
-            background: var(--accent);
-            color: var(--bg);
+            background: linear-gradient(135deg, var(--accent), #14b8a6);
+            color: #042f2e;
+            box-shadow: 0 4px 20px rgba(94, 234, 212, 0.3);
         }
 
         .btn-primary:hover {
-            background: var(--accent-2);
             transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(94, 234, 212, 0.2);
+            box-shadow: 0 8px 30px rgba(94, 234, 212, 0.45);
         }
 
         .btn-secondary {
-            background: transparent;
-            color: var(--text);
+            background: var(--surface-card);
             border: 1px solid var(--border);
+            color: var(--text);
+            backdrop-filter: blur(10px);
         }
 
         .btn-secondary:hover {
-            border-color: var(--accent);
-            color: var(--accent);
+            border-color: var(--border-hover);
+            background: var(--surface-hover);
             transform: translateY(-2px);
         }
 
-        .btn svg {
-            width: 16px;
-            height: 16px;
-            transition: transform 0.3s;
+        /* Hero Quick Install Block */
+        .install-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(12, 14, 23, 0.95);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.75rem 1.2rem;
+            max-width: 480px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--accent);
         }
 
-        .btn:hover svg { transform: translateX(3px); }
-
-        /* Sections */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 24px;
+        .install-box .cmd {
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        section { padding: 100px 0; }
+        .install-box .cmd span { color: var(--accent); }
+
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .copy-btn:hover {
+            background: var(--accent);
+            color: #042f2e;
+            border-color: var(--accent);
+        }
+
+        /* Hero Terminal Mockup */
+        .terminal-card {
+            background: #0b0d14;
+            border: 1px solid rgba(94, 234, 212, 0.2);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(94, 234, 212, 0.1);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.83rem;
+            line-height: 1.55;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .terminal-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.8), 0 0 50px rgba(94, 234, 212, 0.18);
+        }
+
+        .terminal-header {
+            background: #141724;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .terminal-dots {
+            display: flex;
+            gap: 7px;
+        }
+
+        .terminal-dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #ef4444; }
+        .dot-yellow { background: #f59e0b; }
+        .dot-green { background: #10b981; }
+
+        .terminal-title {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .terminal-body {
+            padding: 18px;
+            color: #94a3b8;
+            min-height: 340px;
+        }
+
+        .t-dim { color: #64748b; }
+        .t-cyan { color: var(--accent); }
+        .t-green { color: #10b981; }
+        .t-yellow { color: #fbbf24; }
+        .t-orange { color: var(--accent-2); }
+        .t-bold { font-weight: 700; color: #f8fafc; }
+
+        /* Section Commons */
+        section {
+            padding: 100px 0;
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 680px;
+            margin: 0 auto 60px;
+        }
 
         .section-label {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             color: var(--accent);
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -341,283 +445,227 @@
         }
 
         .section-title {
-            font-size: clamp(2rem, 4vw, 2.75rem);
+            font-size: clamp(2rem, 4vw, 2.8rem);
             font-weight: 700;
             letter-spacing: -1px;
             margin-bottom: 1rem;
-            line-height: 1.2;
         }
 
         .section-desc {
             color: var(--text-muted);
-            font-size: 1.1rem;
-            max-width: 500px;
-            margin-bottom: 3rem;
-        }
-
-        .section-header { margin-bottom: 3rem; }
-
-        /* About */
-        .about-grid {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 4rem;
-            align-items: center;
-        }
-
-        .about-visual {
-            position: relative;
-        }
-
-        .about-img {
-            width: 280px;
-            height: 280px;
-            border-radius: 24px;
-            background: linear-gradient(135deg, var(--surface), var(--surface-2));
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 5rem;
-            margin: 0 auto;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .about-img::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: conic-gradient(from 0deg, transparent, var(--accent), transparent);
-            animation: rotate 4s linear infinite;
-            opacity: 0.1;
-        }
-
-        @keyframes rotate { 100% { transform: rotate(360deg); } }
-
-        .about-img span { position: relative; z-index: 1; }
-
-        .about-text p {
-            color: var(--text-muted);
-            margin-bottom: 1rem;
             font-size: 1.05rem;
+            line-height: 1.6;
         }
 
-        .about-text strong { color: var(--text); font-weight: 600; }
-
-        /* Stats bar */
-        .stats {
-            display: flex;
-            gap: 3rem;
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid var(--border);
-        }
-
-        .stat { text-align: left; }
-
-        .stat-num {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        .stat-label {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        /* Skills */
-        .skills-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 1rem;
-        }
-
-        .skill-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            padding: 1.5rem;
-            border-radius: 12px;
-            transition: all 0.4s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .skill-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, var(--accent-glow), transparent);
-            opacity: 0;
-            transition: opacity 0.4s;
-        }
-
-        .skill-card:hover {
-            border-color: rgba(94, 234, 212, 0.3);
-            transform: translateY(-4px);
-        }
-
-        .skill-card:hover::before { opacity: 1; }
-
-        .skill-icon {
-            font-size: 1.5rem;
-            margin-bottom: 0.75rem;
-        }
-
-        .skill-card h3 {
-            font-size: 1.1rem;
-            margin-bottom: 0.4rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        .skill-card p {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Projects */
-        .projects-grid {
+        /* Architecture Loop Grid */
+        .loop-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 1.5rem;
+            gap: 1.8rem;
         }
 
-        .project-card {
-            background: var(--surface);
+        .card {
+            background: var(--surface-card);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: var(--radius-md);
             padding: 2rem;
-            transition: all 0.4s ease;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
         }
 
-        .project-card::before {
+        .card::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 3px;
-            background: linear-gradient(90deg, var(--accent), var(--accent-2));
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.4s ease;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
-        .project-card:hover {
-            border-color: rgba(94, 234, 212, 0.3);
-            transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--border-hover);
+            background: var(--surface-hover);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
         }
 
-        .project-card:hover::before { transform: scaleX(1); }
+        .card:hover::before { opacity: 1; }
 
-        .project-card h3 {
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-            color: var(--text);
-        }
-
-        .project-card p {
-            color: var(--text-muted);
-            margin-bottom: 1rem;
-            font-size: 0.95rem;
-        }
-
-        .tech-tags {
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: var(--radius-sm);
+            background: rgba(94, 234, 212, 0.1);
+            border: 1px solid rgba(94, 234, 212, 0.25);
             display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            margin-bottom: 1.4rem;
+            color: var(--accent);
         }
 
-        .tech-tag {
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #f8fafc;
+        }
+
+        .card-desc {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.65;
+        }
+
+        /* Pillars / Features Highlight */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: rgba(18, 20, 29, 0.6);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 2.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            border-color: rgba(94, 234, 212, 0.4);
+            transform: translateY(-4px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .feature-tag {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.75rem;
-            background: var(--surface-2);
-            color: var(--text-muted);
-            padding: 4px 10px;
-            border-radius: 4px;
-            border: 1px solid var(--border);
-        }
-
-        .project-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
             color: var(--accent);
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-top: 1rem;
-            transition: gap 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.8rem;
         }
 
-        .project-link:hover { gap: 10px; }
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            color: #f1f5f9;
+        }
 
-        /* Contact section */
-        .contact-section { text-align: left; }
+        .feature-desc {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.65;
+        }
 
-        .contact-cards {
+        /* Safety Matrix Section */
+        .safety-box {
+            background: rgba(15, 17, 26, 0.85);
+            border: 1px solid rgba(94, 234, 212, 0.2);
+            border-radius: var(--radius-lg);
+            padding: 3rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .safety-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .safety-badge {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--success);
+            padding: 6px 14px;
+            border-radius: 100px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .safety-list {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 1.5rem;
         }
 
-        .contact-card {
-            background: var(--surface);
+        .safety-item {
+            background: rgba(22, 25, 38, 0.6);
             border: 1px solid var(--border);
-            padding: 2rem;
-            border-radius: 12px;
-            text-decoration: none;
-            color: inherit;
-            transition: all 0.4s ease;
-            position: relative;
-            display: block;
+            border-radius: var(--radius-sm);
+            padding: 1.4rem;
         }
 
-        .contact-card:hover {
-            border-color: var(--accent);
-            transform: translateY(-4px);
-            box-shadow: 0 8px 30px var(--accent-glow);
-        }
-
-        .contact-card h3 {
-            font-size: 1.1rem;
+        .safety-item h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #e2e8f0;
             margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .contact-card p {
-            color: var(--accent);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.95rem;
-            word-break: break-all;
+        .safety-item p {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            line-height: 1.55;
         }
 
-        .contact-card .icon {
-            font-size: 2rem;
+        /* CTA Section */
+        .cta-section {
+            text-align: center;
+            background: linear-gradient(180deg, transparent, rgba(94, 234, 212, 0.05), transparent);
+            padding: 110px 0;
+        }
+
+        .cta-card {
+            background: rgba(18, 20, 29, 0.85);
+            border: 1px solid rgba(94, 234, 212, 0.3);
+            border-radius: var(--radius-lg);
+            padding: 4rem 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 50px rgba(94, 234, 212, 0.1);
+        }
+
+        .cta-title {
+            font-size: clamp(2rem, 4vw, 2.8rem);
+            font-weight: 700;
             margin-bottom: 1rem;
         }
 
-        /* GitHub link card special */
-        .github-card {
-            background: linear-gradient(135deg, var(--surface) 0%, #1a1f2e 100%);
+        .cta-desc {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 2.2rem;
+            max-width: 550px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         /* Footer */
         footer {
-            background: var(--surface);
+            background: #07080b;
             border-top: 1px solid var(--border);
             padding: 3rem 0;
+            position: relative;
+            z-index: 2;
         }
 
         .footer-content {
@@ -625,30 +673,29 @@
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 1.5rem;
         }
-
-        footer p { color: var(--text-muted); font-size: 0.9rem; }
 
         .footer-links {
             display: flex;
-            gap: 1.5rem;
+            gap: 2rem;
             list-style: none;
         }
 
         .footer-links a {
             color: var(--text-muted);
             text-decoration: none;
-            transition: color 0.3s;
+            font-size: 0.9rem;
+            transition: color 0.25s;
         }
 
         .footer-links a:hover { color: var(--accent); }
 
-        /* Scroll reveal */
+        /* Scroll Reveal Animations */
         .reveal {
             opacity: 0;
             transform: translateY(30px);
-            transition: opacity 0.6s ease, transform 0.6s ease;
+            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .reveal.visible {
@@ -656,46 +703,12 @@
             transform: translateY(0);
         }
 
-        .reveal-delay-1 { transition-delay: 0.1s; }
-        .reveal-delay-2 { transition-delay: 0.2s; }
-        .reveal-delay-3 { transition-delay: 0.3s; }
-
-        /* Particles */
-        #particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* Mobile nav toggle */
-        .mobile-toggle {
-            display: none;
-            flex-direction: column;
-            gap: 5px;
-            cursor: pointer;
-            background: none;
-            border: none;
-            padding: 5px;
-        }
-
-        .mobile-toggle span {
-            width: 24px;
-            height: 2px;
-            background: var(--text);
-            transition: all 0.3s;
-        }
-
-        @media (max-width: 768px) {
+        /* Responsive Breakpoints */
+        @media (max-width: 968px) {
+            .hero-grid { grid-template-columns: 1fr; gap: 3rem; }
+            .features-grid { grid-template-columns: 1fr; }
             .nav-links { display: none; }
-            .mobile-toggle { display: flex; }
-            .about-grid { grid-template-columns: 1fr; gap: 2rem; }
-            .stats { flex-direction: column; gap: 1rem; }
-            section { padding: 60px 0; }
-            .hero h1 { font-size: 2.5rem; }
+            .mobile-toggle { display: block; }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -707,242 +720,222 @@
     </style>
 </head>
 <body>
-    <div class="cursor-glow" id="cursorGlow"></div>
     <canvas id="particles"></canvas>
+    <div class="cursor-glow" id="cursorGlow"></div>
 
     <header id="header">
         <nav>
-            <a href="#hero" class="logo">dev<span>-</span>mate</a>
+            <a href="portfolio.html" class="logo">
+                dev<span>-</span>mate <span class="tag">agent</span>
+            </a>
             <ul class="nav-links">
-                <li><a href="contact.html">Contact</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="#skills">Skills</a></li>
-                <li><a href="#projects">Projects</a></li>
+                <li><a href="#about">Architecture</a></li>
+                <li><a href="#features">Capabilities</a></li>
+                <li><a href="#safety">Safety Model</a></li>
                 <li><a href="contact.html" class="nav-cta">Get in Touch</a></li>
             </ul>
-            <button class="mobile-toggle" aria-label="Toggle menu">
+            <button class="mobile-toggle" aria-label="Toggle navigation">
                 <span></span><span></span><span></span>
             </button>
         </nav>
     </header>
 
-    <section class="hero" id="hero">
-        <div class="hero-bg">
-            <div class="orb"></div>
-            <div class="orb"></div>
-            <div class="orb"></div>
-        </div>
-        <div class="hero-content">
-            <div class="hero-badge">
-                <div class="pulse"></div>
-                Active &mdash; Open to collaborations
-            </div>
-            <h1>Build smarter with<br><span class="gradient-text">Dev-Mate</span></h1>
-            <p class="hero-subtitle">A lightweight, multi-provider AI software engineering agent for modern development teams.</p>
-            <p class="hero-desc">OpenRouter + Google Gemini support. Reads, writes, edits, and executes &mdash; with human approval for anything risky.</p>
-            <div class="hero-actions">
-                <a href="#about" class="btn btn-primary">
-                    Explore the Project
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </a>
-                <a href="https://github.com/dev-mate/dev-mate" target="_blank" rel="noopener" class="btn btn-secondary">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-                    GitHub Repo
-                </a>
-            </div>
-        </div>
-    </section>
+    <main>
+        <!-- Hero Section -->
+        <section class="hero" id="hero">
+            <div class="hero-grid">
+                <div class="hero-text">
+                    <div class="hero-badge">
+                        <div class="pulse"></div>
+                        Open Source &bull; Multi-Provider Engineering Agent
+                    </div>
+                    <h1>Autonomous code engineering.<br><span class="gradient-text">Zero speculative chaos.</span></h1>
+                    <p class="hero-subtitle">A lightweight, security-hardened AI software engineer for Windows, Linux, and macOS.</p>
+                    <p class="hero-desc">
+                        Seamlessly integrates Google Gemini and OpenRouter. Inspects projects, drafts targeted plans, edits code, runs test suites, diagnoses execution failures, and stops at user checkpoints.
+                    </p>
+                    <div class="hero-actions">
+                        <a href="#about" class="btn btn-primary">
+                            Explore Architecture
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </a>
+                        <a href="https://github.com/dev-mate/dev-mate" target="_blank" rel="noopener" class="btn btn-secondary">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                            GitHub Repository
+                        </a>
+                    </div>
+                    <div class="install-box">
+                        <div class="cmd"><span>❯</span> pip install -e . && devmate</div>
+                        <button class="copy-btn" id="installCopyBtn" onclick="copyInstallCmd()">Copy</button>
+                    </div>
+                </div>
 
-    <div class="container">
+                <!-- Live Terminal Mockup -->
+                <div class="terminal-card">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <div class="terminal-dot dot-red"></div>
+                            <div class="terminal-dot dot-yellow"></div>
+                            <div class="terminal-dot dot-green"></div>
+                        </div>
+                        <div class="terminal-title">devmate --mode engineer</div>
+                        <div style="width: 30px;"></div>
+                    </div>
+                    <div class="terminal-body">
+                        <p class="t-dim">// Dev-Mate v0.1.0 session initialized</p>
+                        <p><span class="t-cyan">devmate</span> <span class="t-yellow">[engineer]</span> ❯ Harden tool permissions and run test verification</p>
+                        <br>
+                        <p class="t-bold t-cyan">╔═ ENGINEERING ITERATION 1/10 ═════════════════════════╗</p>
+                        <p><span class="t-orange">[TOOL]</span> safe_path(rel="devmate/tools.py")</p>
+                        <p><span class="t-green">[PASS]</span> Path isolated within workspace root</p>
+                        <p><span class="t-orange">[TOOL]</span> run_python(path="tests/test_security.py")</p>
+                        <p><span class="t-green">[PASS]</span> 19 passed in 0.67s &bull; Returncode: 0</p>
+                        <br>
+                        <p><span class="t-yellow">Checkpoint:</span> continue to next improvement? [Y/n/v]</p>
+                        <p class="t-cyan">> Verified zero regressions. Working tree ready.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Engineering Architecture Section -->
         <section id="about">
-            <div class="section-header reveal">
-                <p class="section-label">// About</p>
-                <h2 class="section-title">Purpose-built for<br>engineering teams</h2>
-                <p class="section-desc">Dev-Mate bridges the gap between human intent and working code, with safety and control at every step.</p>
-            </div>
-            <div class="about-grid">
-                <div class="about-visual reveal">
-                    <div class="about-img"><span>&#9881;</span></div>
+            <div class="container">
+                <div class="section-header reveal">
+                    <p class="section-label">// Systematic Loop</p>
+                    <h2 class="section-title">The Engineering Cycle</h2>
+                    <p class="section-desc">Dev-Mate executes software changes through a disciplined, verification-guided loop instead of speculative unverified code generation.</p>
                 </div>
-                <div class="about-text reveal reveal-delay-1">
-                    <p>Dev-Mate is a sophisticated AI software engineering agent built for <strong>modern development workflows</strong> across Windows, Linux, and macOS. It doesn't just suggest code &mdash; it reads your project, plans changes, executes them, and verifies the results.</p>
-                    <p>With <strong>multi-provider support</strong> (OpenRouter + Google Gemini), Dev-Mate offers flexible AI capabilities for reading, creating, editing, and deleting project files, executing commands and Python code, and running comprehensive tests.</p>
-                    <p>The engineering loop ensures systematic improvement: <strong>inspect &rarr; plan &rarr; edit &rarr; execute &rarr; diagnose &rarr; verify &rarr; checkpoint</strong>, with human approval for safety-critical operations like deletes, shell commands, and git push.</p>
-                    <div class="stats">
-                        <div class="stat">
-                            <div class="stat-num">4+</div>
-                            <div class="stat-label">AI Providers</div>
+
+                <div class="loop-grid">
+                    <div class="card reveal">
+                        <div class="card-icon">&#128269;</div>
+                        <h3 class="card-title">1. Inspect & Map</h3>
+                        <p class="card-desc">Reads project architecture, searches relevant symbols, and verifies context before attempting any modifications.</p>
+                    </div>
+                    <div class="card reveal">
+                        <div class="card-icon">&#9998;</div>
+                        <h3 class="card-title">2. Targeted Edit</h3>
+                        <p class="card-desc">Applies atomic string replacements and creates automatic timestamped rollbacks in <code>.devmate/backups/</code>.</p>
+                    </div>
+                    <div class="card reveal">
+                        <div class="card-icon">&#9881;</div>
+                        <h3 class="card-title">3. Execute & Verify</h3>
+                        <p class="card-desc">Runs tests and builds through guarded execution with real-time return code and stdout/stderr capture.</p>
+                    </div>
+                    <div class="card reveal">
+                        <div class="card-icon">&#129302;</div>
+                        <h3 class="card-title">4. Diagnose & Fix</h3>
+                        <p class="card-desc">If execution encounters an error, the agent isolates root causes directly from output logs and remediates.</p>
+                    </div>
+                    <div class="card reveal">
+                        <div class="card-icon">&#128737;</div>
+                        <h3 class="card-title">5. Human Checkpoint</h3>
+                        <p class="card-desc">Pauses after each engineering iteration, presenting git diffs and status for human-in-the-loop signoff.</p>
+                    </div>
+                    <div class="card reveal">
+                        <div class="card-icon">&#129504;</div>
+                        <h3 class="card-title">6. Persistent Memory</h3>
+                        <p class="card-desc">Maintains structured project knowledge and decision logs across sessions in <code>.devmate/memory.json</code>.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Matrix -->
+        <section id="features">
+            <div class="container">
+                <div class="section-header reveal">
+                    <p class="section-label">// Architectural Pillars</p>
+                    <h2 class="section-title">Engineered for Reliability</h2>
+                    <p class="section-desc">Built with robust boundaries that prevent runaway agents, prompt injection exploits, and code destruction.</p>
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card reveal">
+                        <div class="feature-tag">Multi-Provider</div>
+                        <h3 class="feature-title">Dual Provider Gateway</h3>
+                        <p class="feature-desc">Switch between Google Gemini's native function-calling REST endpoints and OpenRouter's vast model catalog on the fly.</p>
+                    </div>
+                    <div class="feature-card reveal">
+                        <div class="feature-tag">Security Sandbox</div>
+                        <h3 class="feature-title">Strict Path Isolation</h3>
+                        <p class="feature-desc">Guards against path traversal, Windows special device names, and blocks modification of git hooks and secrets.</p>
+                    </div>
+                    <div class="feature-card reveal">
+                        <div class="feature-tag">Zero Injection</div>
+                        <h3 class="feature-title">Shell-Safe Python Execution</h3>
+                        <p class="feature-desc">Executes scripts via direct process invocation (<code>shell=False</code>) under <code>sys.executable</code>, eliminating command injection.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Safety Model Section -->
+        <section id="safety">
+            <div class="container">
+                <div class="safety-box reveal">
+                    <div class="safety-header">
+                        <div>
+                            <p class="section-label" style="text-align: left;">// Security Matrix</p>
+                            <h2 style="font-size: 2rem; font-weight: 700;">Human-in-the-Loop Guarantees</h2>
                         </div>
-                        <div class="stat">
-                            <div class="stat-num">6</div>
-                            <div class="stat-label">Core Tools</div>
+                        <div class="safety-badge">
+                            &#10003; Zero Unvetted Tool Execution
                         </div>
-                        <div class="stat">
-                            <div class="stat-num">&infin;</div>
-                            <div class="stat-label">Iterate</div>
+                    </div>
+                    <div class="safety-list">
+                        <div class="safety-item">
+                            <h4>&#128274; Guarded Secrets</h4>
+                            <p>Environment files (<code>.env</code>, <code>.env.*</code>) and sensitive keys are blocked from model reading or tool tampering.</p>
+                        </div>
+                        <div class="safety-item">
+                            <h4>&#128465; Delete & Shell Approval</h4>
+                            <p>Destructive commands, file deletions, and shell processes require explicit user approval before execution.</p>
+                        </div>
+                        <div class="safety-item">
+                            <h4>&#128190; Automatic Backups</h4>
+                            <p>Every file edit and write creates an instant timestamped backup in <code>.devmate/backups/</code> for one-click rollback.</p>
+                        </div>
+                        <div class="safety-item">
+                            <h4>&#128203; Audit Logging</h4>
+                            <p>All tool calls, shell executions, and verification statuses are recorded with sanitization in <code>activity.jsonl</code>.</p>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section id="skills">
-            <div class="section-header reveal">
-                <p class="section-label">// Technical Skills</p>
-                <h2 class="section-title">What it works with</h2>
-                <p class="section-desc">Built on a modern stack for maximum compatibility and performance.</p>
-            </div>
-            <div class="skills-grid">
-                <div class="skill-card reveal">
-                    <div class="skill-icon">&#128221;</div>
-                    <h3>Python</h3>
-                    <p>Core development language across all modules</p>
-                </div>
-                <div class="skill-card reveal reveal-delay-1">
-                    <div class="skill-icon">&#129302;</div>
-                    <h3>OpenRouter</h3>
-                    <p>Multi-model provider with OpenAI-compatible API</p>
-                </div>
-                <div class="skill-card reveal reveal-delay-2">
-                    <div class="skill-icon">&#129315;</div>
-                    <h3>Google Gemini</h3>
-                    <p>Function-calling API for structured tool use</p>
-                </div>
-                <div class="skill-card reveal">
-                    <div class="skill-icon">&#9881;</div>
-                    <h3>Node.js</h3>
-                    <p>Runtime environment and tooling support</p>
-                </div>
-                <div class="skill-card reveal reveal-delay-1">
-                    <div class="skill-icon">&#128220;</div>
-                    <h3>TypeScript</h3>
-                    <p>Typed JavaScript for robust codebases</p>
-                </div>
-                <div class="skill-card reveal reveal-delay-2">
-                    <div class="skill-icon">&#128196;</div>
-                    <h3>React</h3>
-                    <p>Frontend framework for UI components</p>
-                </div>
-                <div class="skill-card reveal">
-                    <div class="skill-icon">&#128451;</div>
-                    <h3>PostgreSQL</h3>
-                    <p>Database for persistent state and data</p>
-                </div>
-                <div class="skill-card reveal reveal-delay-1">
-                    <div class="skill-icon">&#128239;</div>
-                    <h3>Docker</h3>
-                    <p>Containerization for reproducible environments</p>
-                </div>
-                <div class="skill-card reveal reveal-delay-2">
-                    <div class="skill-icon">&#8986;</div>
-                    <h3>Git</h3>
-                    <p>Version control with diff and status inspection</p>
+        <!-- Call to Action -->
+        <section class="cta-section">
+            <div class="container">
+                <div class="cta-card reveal">
+                    <h2 class="cta-title">Build with Dev-Mate today</h2>
+                    <p class="cta-desc">Lightweight, transparent, and completely under your control. Start engineering smarter in seconds.</p>
+                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                        <a href="contact.html" class="btn btn-primary">Connect with the Team</a>
+                        <a href="https://github.com/dev-mate/dev-mate" target="_blank" rel="noopener" class="btn btn-secondary">Star on GitHub</a>
+                    </div>
                 </div>
             </div>
         </section>
-
-        <section id="projects">
-            <div class="section-header reveal">
-                <p class="section-label">// Projects</p>
-                <h2 class="section-title">Featured work</h2>
-                <p class="section-desc">Real systems built with real engineering discipline.</p>
-            </div>
-            <div class="projects-grid">
-                <div class="project-card reveal">
-                    <h3>Dev-Mate AI Agent</h3>
-                    <p>A lightweight, multi-provider AI software-engineering agent with human-in-the-loop approval for safe development operations.</p>
-                    <div class="tech-tags">
-                        <span class="tech-tag">Python</span>
-                        <span class="tech-tag">OpenRouter</span>
-                        <span class="tech-tag">Gemini</span>
-                    </div>
-                    <a href="https://github.com/dev-mate/dev-mate" target="_blank" rel="noopener" class="project-link">
-                        View on GitHub
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </a>
-                </div>
-                <div class="project-card reveal reveal-delay-1">
-                    <h3>Housing Price Prediction</h3>
-                    <p>Machine learning pipeline for predicting housing prices using Random Forest with scikit-learn and comprehensive model evaluation.</p>
-                    <div class="tech-tags">
-                        <span class="tech-tag">Python</span>
-                        <span class="tech-tag">scikit-learn</span>
-                        <span class="tech-tag">pandas</span>
-                    </div>
-                    <a href="https://github.com/dev-mate/dev-mate" target="_blank" rel="noopener" class="project-link">
-                        View on GitHub
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </a>
-                </div>
-                <div class="project-card reveal reveal-delay-2">
-                    <h3>IRIS Classifier</h3>
-                    <p>Machine learning model for iris flower classification using scikit-learn algorithms with visualization.</p>
-                    <div class="tech-tags">
-                        <span class="tech-tag">Python</span>
-                        <span class="tech-tag">scikit-learn</span>
-                        <span class="tech-tag">matplotlib</span>
-                    </div>
-                    <a href="https://github.com/dev-mate/dev-mate" target="_blank" rel="noopener" class="project-link">
-                        View on GitHub
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </a>
-                </div>
-                <div class="project-card reveal">
-                    <h3>LLM Framework</h3>
-                    <p>Framework for interacting with Large Language Models through a provider abstraction layer with tool-calling support.</p>
-                    <div class="tech-tags">
-                        <span class="tech-tag">Python</span>
-                        <span class="tech-tag">requests</span>
-                        <span class="tech-tag">OpenRouter API</span>
-                    </div>
-                    <a href="https://github.com/dev-mate/dev-mate" target="_blank" rel="noopener" class="project-link">
-                        View on GitHub
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </a>
-                </div>
-            </div>
-        </section>
-
-        <section id="contact">
-            <div class="section-header reveal">
-                <p class="section-label">// Get in Touch</p>
-                <h2 class="section-title">Let's build something<br>worth building</h2>
-                <p class="section-desc">Have a project, idea, or just want to talk shop? I'm always open to connecting.</p>
-            </div>
-            <div class="contact-cards">
-                <a href="https://github.com/dev-mate/dev-mate" target="_blank" rel="noopener" class="contact-card github-card reveal">
-                    <div class="icon">&#9783;</div>
-                    <h3>GitHub</h3>
-                    <p>github.com/dev-mate/dev-mate</p>
-                </a>
-                <a href="mailto:hello@dev-mate.ai" class="contact-card reveal reveal-delay-1">
-                    <div class="icon">&#9993;</div>
-                    <h3>Email</h3>
-                    <p>hello@dev-mate.ai</p>
-                </a>
-                <a href="https://linkedin.com/in/dev-mate" target="_blank" rel="noopener" class="contact-card reveal reveal-delay-2">
-                    <div class="icon">&#128100;</div>
-                    <h3>LinkedIn</h3>
-                    <p>linkedin.com/in/dev-mate</p>
-                </a>
-            </div>
-        </section>
-    </div>
+    </main>
 
     <footer>
         <div class="container">
             <div class="footer-content">
-                <p>&copy; 2024 Dev-Mate. Built with care for developers, by developers.</p>
+                <p>&copy; 2026 Dev-Mate. Engineered for developers, by developers.</p>
                 <ul class="footer-links">
+                    <li><a href="portfolio.html">Home</a></li>
+                    <li><a href="contact.html">Contact</a></li>
                     <li><a href="https://github.com/dev-mate/dev-mate" target="_blank" rel="noopener">GitHub</a></li>
-                    <li><a href="#hero">Back to top</a></li>
                 </ul>
             </div>
         </div>
     </footer>
 
     <script>
-        // Cursor glow
+        // Cursor glow tracking
         const glow = document.getElementById('cursorGlow');
         let mouseX = 0, mouseY = 0, glowX = 0, glowY = 0;
 
@@ -954,16 +947,17 @@
         function animateGlow() {
             glowX += (mouseX - glowX) * 0.1;
             glowY += (mouseY - glowY) * 0.1;
-            glow.style.left = glowX + 'px';
-            glow.style.top = glowY + 'px';
+            if (glow) {
+                glow.style.left = glowX + 'px';
+                glow.style.top = glowY + 'px';
+            }
             requestAnimationFrame(animateGlow);
         }
         animateGlow();
 
-        // Hide glow on touch devices
-        if ('ontouchstart' in window) glow.style.display = 'none';
+        if ('ontouchstart' in window && glow) glow.style.display = 'none';
 
-        // Particles
+        // Background Particle Network
         const canvas = document.getElementById('particles');
         const ctx = canvas.getContext('2d');
         let particles = [];
@@ -972,21 +966,18 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         }
-
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
         class Particle {
-            constructor() {
-                this.reset();
-            }
+            constructor() { this.reset(); }
             reset() {
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 2 + 0.5;
-                this.speedX = (Math.random() - 0.5) * 0.3;
-                this.speedY = (Math.random() - 0.5) * 0.3;
-                this.opacity = Math.random() * 0.5 + 0.1;
+                this.size = Math.random() * 2 + 0.8;
+                this.speedX = (Math.random() - 0.5) * 0.35;
+                this.speedY = (Math.random() - 0.5) * 0.35;
+                this.opacity = Math.random() * 0.4 + 0.1;
             }
             update() {
                 this.x += this.speedX;
@@ -1003,24 +994,23 @@
             }
         }
 
-        for (let i = 0; i < 60; i++) particles.push(new Particle());
+        for (let i = 0; i < 50; i++) particles.push(new Particle());
 
         function animateParticles() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             particles.forEach(p => { p.update(); p.draw(); });
 
-            // Draw connections
             for (let i = 0; i < particles.length; i++) {
                 for (let j = i + 1; j < particles.length; j++) {
                     const dx = particles[i].x - particles[j].x;
                     const dy = particles[i].y - particles[j].y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist < 120) {
+                    if (dist < 110) {
                         ctx.beginPath();
                         ctx.moveTo(particles[i].x, particles[i].y);
                         ctx.lineTo(particles[j].x, particles[j].y);
-                        ctx.strokeStyle = `rgba(94, 234, 212, ${0.06 * (1 - dist / 120)})`;
-                        ctx.lineWidth = 0.5;
+                        ctx.strokeStyle = `rgba(94, 234, 212, ${0.08 * (1 - dist / 110)})`;
+                        ctx.lineWidth = 0.6;
                         ctx.stroke();
                     }
                 }
@@ -1029,42 +1019,37 @@
         }
         animateParticles();
 
-        // Scroll header effect
+        // Header scroll effect
         const header = document.getElementById('header');
         window.addEventListener('scroll', () => {
-            header.classList.toggle('scrolled', window.scrollY > 50);
+            header.classList.toggle('scrolled', window.scrollY > 40);
         });
 
-        // Intersection Observer for reveal animations
+        // Intersection Observer for scroll reveal
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     entry.target.classList.add('visible');
                 }
             });
-        }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
-
+        }, { threshold: 0.12 });
         document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-        // Mobile menu toggle
-        const mobileToggle = document.querySelector('.mobile-toggle');
-        const navLinks = document.querySelector('.nav-links');
-
-        mobileToggle.addEventListener('click', () => {
-            if (navLinks.style.display === 'flex') {
-                navLinks.style.display = '';
-            } else {
-                navLinks.style.display = 'flex';
-                navLinks.style.flexDirection = 'column';
-                navLinks.style.position = 'absolute';
-                navLinks.style.top = '100%';
-                navLinks.style.left = '0';
-                navLinks.style.right = '0';
-                navLinks.style.background = 'rgba(15,15,15,0.98)';
-                navLinks.style.padding = '1.5rem';
-                navLinks.style.borderBottom = '1px solid var(--border)';
-            }
-        });
+        // Copy Install Command
+        function copyInstallCmd() {
+            const cmd = "pip install -e . && devmate";
+            navigator.clipboard.writeText(cmd).then(() => {
+                const btn = document.getElementById('installCopyBtn');
+                btn.textContent = "Copied!";
+                btn.style.background = "#10b981";
+                btn.style.color = "#042f2e";
+                setTimeout(() => {
+                    btn.textContent = "Copy";
+                    btn.style.background = "";
+                    btn.style.color = "";
+                }, 2000);
+            });
+        }
     </script>
 </body>
 </html>

@@ -1,21 +1,29 @@
+"""Toolbox providing file, search, command, and git operations for Dev-Mate.
+Equipped with strict path traversal, shell injection, and secret protections,
+and optimized for minimal API token consumption on large repositories.
+"""
+
 import json
 import os
+import re
 import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
 
 from .memory import Memory
+from .context import compress_text
 
 
 TEXT_EXTS = {
-    ".py", ".js", ".ts", ".tsx", ".jsx", ".html", ".css",
+    ".py", ".pyw", ".js", ".ts", ".tsx", ".jsx", ".html", ".css",
     ".json", ".yaml", ".yml", ".toml", ".md", ".txt", ".sql",
     ".java", ".cpp", ".c", ".h", ".hpp", ".rs", ".go",
     ".php", ".xml", ".ini", ".cfg", ".sh", ".ps1"
 }
 
-IGNORE_DIRS = {
+PROTECTED_DIRS = {
     ".git",
     ".venv",
     "venv",
@@ -26,16 +34,75 @@ IGNORE_DIRS = {
     ".devmate"
 }
 
+PROTECTED_SECRET_NAMES = {
+    "id_rsa",
+    "id_ed25519",
+    "credentials",
+    ".bash_history",
+}
 
-def safe_path(root: Path, rel: str) -> Path:
-    p = (root / rel).resolve()
+WINDOWS_DEVICE_NAMES = {
+    "CON", "PRN", "AUX", "NUL",
+    *(f"COM{i}" for i in range(1, 10)),
+    *(f"LPT{i}" for i in range(1, 10)),
+}
+
+DANGEROUS_COMMAND_PATTERNS = [
+    r"format\s+[a-zA-Z]:",
+    r"del\s+/[fFqsSQ\s]*[cC]:\\",
+    r"rm\s+-rf\s+[/~]",
+    r":\(\)\s*\{\s*:\|:&\s*\};:",
+    r"\bmkfs\b",
+    r"\bdd\s+if=",
+]
+
+
+def is_protected_path(rel_path: Path, allow_env_example: bool = True) -> bool:
+    """Check if a relative path references a protected directory or secret file."""
+    name = rel_path.name.lower()
+
+    if name.startswith(".env"):
+        if allow_env_example and name == ".env.example":
+            return False
+        return True
+
+    if name in PROTECTED_SECRET_NAMES:
+        return True
+
+    for part in rel_path.parts:
+        if part in PROTECTED_DIRS:
+            return True
+
+    return False
+
+
+def safe_path(root: Path, rel: str, allow_env_example: bool = True) -> Path:
+    """
+    Resolve and validate a path relative to the project root.
+    Guards against path traversal, Windows device names, and access to protected files/dirs.
+    """
+    if not rel or not isinstance(rel, str):
+        raise ValueError("A valid path string is required")
+
+    clean_rel = rel.strip()
+
+    for part in Path(clean_rel).parts:
+        stem = Path(part).stem.upper()
+        if stem in WINDOWS_DEVICE_NAMES:
+            raise ValueError(f"Path references invalid Windows device name: {part}")
+
+    root_resolved = root.resolve()
+    target = (root_resolved / clean_rel).resolve()
 
     try:
-        p.relative_to(root.resolve())
+        relative = target.relative_to(root_resolved)
     except ValueError:
-        raise ValueError("Path escapes the project root")
+        raise ValueError(f"Path '{clean_rel}' escapes the project root")
 
-    return p
+    if is_protected_path(relative, allow_env_example=allow_env_example):
+        raise PermissionError(f"Access to protected path '{clean_rel}' is denied by security policy")
+
+    return target
 
 
 class ToolBox:
@@ -49,60 +116,93 @@ class ToolBox:
         (self.cfg.devmate_dir / "backups").mkdir(exist_ok=True)
 
     def _backup(self, p: Path):
+        """Create a timestamped backup before modifying or deleting a file."""
         if p.exists() and p.is_file():
             stamp = time.strftime("%Y%m%d-%H%M%S")
             dst = self.cfg.devmate_dir / "backups" / f"{stamp}_{p.name}"
-            shutil.copy2(p, dst)
+            try:
+                shutil.copy2(p, dst)
+            except OSError:
+                pass
 
     def list_files(self, path="."):
+        """List project files while filtering out protected directories and capping output for token efficiency."""
         base = safe_path(self.root, path)
         out = []
 
         for p in sorted(base.rglob("*")):
-            if any(part in IGNORE_DIRS for part in p.parts):
+            try:
+                rel = p.relative_to(self.root)
+            except ValueError:
+                continue
+
+            if is_protected_path(rel):
                 continue
 
             if p.is_file():
-                out.append(str(p.relative_to(self.root)))
+                out.append(str(rel))
 
-        return "\n".join(out[:1000])
+        total_count = len(out)
+        limit = 100
+        results = out[:limit]
+        if total_count > limit:
+            results.append(f"... [{total_count - limit} more files in '{path}'. Specify subpath to inspect specific folders]")
 
-    def read_file(self, path, start_line=1, end_line=400):
-        p = safe_path(self.root, path)
+        return "\n".join(results)
+
+    def read_file(self, path, start_line=1, end_line=None):
+        """Read a text file with line numbers, guarded against secret exfiltration and token blowup."""
+        p = safe_path(self.root, path, allow_env_example=True)
 
         if not p.is_file():
-            raise FileNotFoundError(path)
+            raise FileNotFoundError(f"File not found: {path}")
 
         lines = p.read_text(
             encoding="utf-8",
             errors="replace"
         ).splitlines()
 
+        total_lines = len(lines)
         start = max(1, int(start_line))
-        end = min(len(lines), int(end_line))
 
-        result = "\n".join(
+        if end_line is None:
+            end = min(total_lines, start + self.cfg.max_file_read_lines - 1)
+        else:
+            end = min(total_lines, int(end_line))
+
+        # Cap single read chunk to 200 lines to prevent context flooding
+        if (end - start + 1) > 200:
+            end = start + 199
+            truncated_note = f"\n... [Chunk capped at 200 lines to save tokens. Use start_line={end + 1} to read remaining {total_lines - end} lines]"
+        else:
+            truncated_note = ""
+
+        formatted_lines = [
             f"{i}: {lines[i - 1]}"
             for i in range(start, end + 1)
-        )
+        ]
 
-        self.memory.log(
-            "READ",
-            f"{path} lines {start}-{end}"
-        )
-
+        result = "\n".join(formatted_lines) + truncated_note
+        self.memory.log("READ", f"{path} lines {start}-{end}")
         return result
 
     def search_files(self, query, path="."):
+        """Search text across project files, capped at top relevant hits to save tokens."""
         base = safe_path(self.root, path)
         hits = []
         q = query.lower()
+        max_hits = getattr(self.cfg, "max_search_results", 25)
 
         for p in base.rglob("*"):
+            try:
+                rel = p.relative_to(self.root)
+            except ValueError:
+                continue
+
             if (
                 not p.is_file()
                 or p.suffix.lower() not in TEXT_EXTS
-                or any(part in IGNORE_DIRS for part in p.parts)
+                or is_protected_path(rel)
             ):
                 continue
 
@@ -116,172 +216,233 @@ class ToolBox:
 
             for i, line in enumerate(lines, 1):
                 if q in line.lower():
-                    hits.append(
-                        f"{p.relative_to(self.root)}:{i}: {line[:300]}"
-                    )
+                    hits.append(f"{rel}:{i}: {line.strip()[:240]}")
 
-                    if len(hits) >= 200:
-                        result = "\n".join(hits)
-
-                        self.memory.log(
-                            "SEARCH",
-                            f"query={query}, path={path}"
-                        )
-
-                        return result
+                    if len(hits) >= max_hits:
+                        self.memory.log("SEARCH", f"query={query}, path={path} (hits={len(hits)})")
+                        return "\n".join(hits) + f"\n... [Showing top {max_hits} matches. Use a more specific query or subpath if needed]"
 
         result = "\n".join(hits) or "No matches."
-
-        self.memory.log(
-            "SEARCH",
-            f"query={query}, path={path}"
-        )
-
+        self.memory.log("SEARCH", f"query={query}, path={path} (hits={len(hits)})")
         return result
 
     def write_file(self, path, content):
-        p = safe_path(self.root, path)
+        """Create or replace a file, guarded against overwriting protected project files."""
+        p = safe_path(self.root, path, allow_env_example=False)
 
         self._backup(p)
-
-        p.parent.mkdir(
-            parents=True,
-            exist_ok=True
-        )
-
-        p.write_text(
-            content,
-            encoding="utf-8"
-        )
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(content, encoding="utf-8")
 
         relative = str(p.relative_to(self.root))
-
-        self.memory.log(
-            "WRITE",
-            relative
-        )
-
+        self.memory.log("WRITE", relative)
         return f"Wrote {relative}"
 
     def edit_file(self, path, old_text, new_text):
-        p = safe_path(self.root, path)
+        """Replace one exact text block in an existing file."""
+        p = safe_path(self.root, path, allow_env_example=False)
 
         if not p.is_file():
-            raise FileNotFoundError(path)
+            raise FileNotFoundError(f"File not found: {path}")
 
-        text = p.read_text(
-            encoding="utf-8",
-            errors="replace"
-        )
+        text = p.read_text(encoding="utf-8", errors="replace")
 
         if old_text not in text:
-            raise ValueError(
-                "old_text was not found exactly; reread the file"
-            )
+            raise ValueError("old_text was not found exactly; reread the file")
 
         self._backup(p)
-
-        p.write_text(
-            text.replace(old_text, new_text, 1),
-            encoding="utf-8"
-        )
+        p.write_text(text.replace(old_text, new_text, 1), encoding="utf-8")
 
         relative = str(p.relative_to(self.root))
-
-        self.memory.log(
-            "EDIT",
-            relative
-        )
-
+        self.memory.log("EDIT", relative)
         return f"Edited {relative}"
 
     def delete_file(self, path):
-        p = safe_path(self.root, path)
+        """Delete a file with human approval and backup."""
+        p = safe_path(self.root, path, allow_env_example=False)
 
         if not self.cfg.allow_delete:
-            if not self.approve(
-                f"Delete {path}? [y/N] "
-            ):
+            if not self.approve(f"Delete {path}? [y/N] "):
                 return "Deletion cancelled by user."
 
         if p.is_file():
             self._backup(p)
             p.unlink()
-
-            self.memory.log(
-                "DELETE",
-                path
-            )
-
+            self.memory.log("DELETE", path)
             return f"Deleted {path}"
 
-        raise FileNotFoundError(path)
+        raise FileNotFoundError(f"File not found: {path}")
 
     def run_command(self, command):
-        if not self.cfg.allow_commands:
-            if not self.approve(
-                f"Run command?\n  {command}\n[y/N] "
-            ):
+        """Execute a shell command with encoding safety, timeout, and compressed token output."""
+        is_high_risk = any(re.search(pat, command, re.IGNORECASE) for pat in DANGEROUS_COMMAND_PATTERNS)
+
+        if is_high_risk:
+            if not self.approve(f"\n⚠️  [HIGH RISK] Destructive command detected:\n  {command}\nExecute? [y/N] "):
+                return "Command execution blocked by security policy."
+        elif not self.cfg.allow_commands:
+            if not self.approve(f"Run command?\n  {command}\n[y/N] "):
                 return "Command cancelled by user."
 
-        r = subprocess.run(
-            command,
-            cwd=self.root,
-            shell=True,
-            text=True,
-            capture_output=True,
-            timeout=self.cfg.command_timeout
-        )
+        try:
+            r = subprocess.run(
+                command,
+                cwd=self.root,
+                shell=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                capture_output=True,
+                timeout=self.cfg.command_timeout
+            )
+            # Compress long output to save tokens while keeping key diagnostics
+            clean_stdout = compress_text(r.stdout, max_chars=2000, head_lines=15, tail_lines=25)
+            clean_stderr = compress_text(r.stderr, max_chars=2000, head_lines=15, tail_lines=25)
 
-        result = json.dumps(
-            {
-                "returncode": r.returncode,
-                "stdout": r.stdout[-12000:],
-                "stderr": r.stderr[-12000:]
-            },
-            ensure_ascii=False
-        )
+            result = json.dumps(
+                {
+                    "returncode": r.returncode,
+                    "stdout": clean_stdout,
+                    "stderr": clean_stderr
+                },
+                ensure_ascii=False
+            )
+            status = "PASS" if r.returncode == 0 else "FAIL"
+            self.memory.log("RUN", command[:200], status)
+            return result
 
-        status = "PASS" if r.returncode == 0 else "FAIL"
-
-        self.memory.log(
-            "RUN",
-            command,
-            status
-        )
-
-        return result
+        except KeyboardInterrupt:
+            self.memory.log("RUN", command[:200], "INTERRUPTED")
+            return json.dumps({"error": "Command execution interrupted by user (Ctrl+C)"})
+        except subprocess.TimeoutExpired:
+            msg = f"Command timed out after {self.cfg.command_timeout}s"
+            self.memory.log("RUN", command[:200], "TIMEOUT")
+            return json.dumps({"error": msg})
+        except Exception as e:
+            msg = f"Command failed: {type(e).__name__}: {e}"
+            self.memory.log("RUN", command[:200], "ERROR")
+            return json.dumps({"error": msg})
 
     def run_python(self, path):
-        return self.run_command(
-            f'python "{path}"'
-        )
+        """
+        Safely execute a Python file inside the project.
+        Uses sys.executable and direct argument execution (shell=False) to eliminate shell injection.
+        """
+        p = safe_path(self.root, path, allow_env_example=False)
+
+        if not p.is_file():
+            raise FileNotFoundError(f"Python script not found: {path}")
+
+        if p.suffix.lower() not in {".py", ".pyw"}:
+            raise ValueError(f"File is not a Python script: {path}")
+
+        rel_str = str(p.relative_to(self.root))
+
+        if not self.cfg.allow_commands:
+            if not self.approve(f"Run Python script?\n  {rel_str}\n[y/N] "):
+                return "Execution cancelled by user."
+
+        try:
+            r = subprocess.run(
+                [sys.executable, str(p)],
+                cwd=self.root,
+                shell=False,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                capture_output=True,
+                timeout=self.cfg.command_timeout
+            )
+            clean_stdout = compress_text(r.stdout, max_chars=2000, head_lines=15, tail_lines=25)
+            clean_stderr = compress_text(r.stderr, max_chars=2000, head_lines=15, tail_lines=25)
+
+            result = json.dumps(
+                {
+                    "returncode": r.returncode,
+                    "stdout": clean_stdout,
+                    "stderr": clean_stderr
+                },
+                ensure_ascii=False
+            )
+            status = "PASS" if r.returncode == 0 else "FAIL"
+            self.memory.log("RUN_PYTHON", rel_str, status)
+            return result
+
+        except KeyboardInterrupt:
+            self.memory.log("RUN_PYTHON", rel_str, "INTERRUPTED")
+            return json.dumps({"error": "Python script execution interrupted by user (Ctrl+C)"})
+        except subprocess.TimeoutExpired:
+            msg = f"Script execution timed out after {self.cfg.command_timeout}s"
+            self.memory.log("RUN_PYTHON", rel_str, "TIMEOUT")
+            return json.dumps({"error": msg})
+        except Exception as e:
+            msg = f"Script execution failed: {type(e).__name__}: {e}"
+            self.memory.log("RUN_PYTHON", rel_str, "ERROR")
+            return json.dumps({"error": msg})
 
     def git_status(self):
-        return self.run_command(
-            "git status --short"
-        )
+        """Run git status with short summary."""
+        return self.run_command("git status --short")
 
     def git_diff(self):
-        return self.run_command(
-            "git diff -- ."
-        )
+        """Run git diff against current directory."""
+        return self.run_command("git diff -- .")
 
     def project_summary(self):
-        files = self.list_files(".").splitlines()
+        """Provide a compact, token-efficient architectural overview without dumping raw file lists."""
+        all_files = []
+        top_dirs = {}
+        manifests = []
+        key_manifest_names = {
+            "pyproject.toml", "requirements.txt", "package.json",
+            "Cargo.toml", "go.mod", "pom.xml", "build.gradle",
+            "Makefile", "Dockerfile", "README.md"
+        }
+
+        for p in sorted(self.root.rglob("*")):
+            try:
+                rel = p.relative_to(self.root)
+            except ValueError:
+                continue
+            if is_protected_path(rel):
+                continue
+            if p.is_file():
+                all_files.append(rel)
+                top_part = rel.parts[0] if len(rel.parts) > 1 else "."
+                top_dirs[top_part] = top_dirs.get(top_part, 0) + 1
+                if p.name in key_manifest_names:
+                    manifests.append(str(rel))
 
         ext = {}
-
-        for f in files:
-            e = Path(f).suffix or "[no extension]"
+        for f in all_files:
+            e = f.suffix.lower() or "[no extension]"
             ext[e] = ext.get(e, 0) + 1
+
+        sorted_ext = dict(sorted(ext.items(), key=lambda item: item[1], reverse=True)[:10])
 
         return json.dumps(
             {
                 "root": str(self.root),
-                "file_count": len(files),
-                "extensions": ext,
-                "files": files[:300]
+                "file_count": len(all_files),
+                "total_files": len(all_files),
+                "directories": top_dirs,
+                "key_manifests": manifests[:10],
+                "extensions": sorted_ext,
+                "hint": "Use list_files(path) to inspect specific directories on demand."
             },
             indent=2
         )
+
+    def delegate_task(self, role: str, prompt: str, provider: str = "inherit") -> str:
+        """Delegate a subtask to a specialized subagent (e.g. researcher, reviewer, debugger)."""
+        from .subagent import SubAgent
+        sub = SubAgent(
+            config=self.cfg,
+            toolbox=self,
+            role=role,
+            provider_name=provider,
+            max_turns=6
+        )
+        report = sub.execute(prompt)
+        self.memory.log("DELEGATE", f"role={role}, provider={provider}, prompt={prompt[:100]}", "PASS")
+        return report

@@ -3,97 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Get in Touch | Dev-Mate</title>
+    <title>Get in Touch | Dev-Mate AI Agent</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            --bg: #0a0a0a;
-            --surface: #141414;
-            --surface-2: #1e1e1e;
-            --border: #2a2a2a;
-            --text: #e8e8e8;
-            --text-muted: #777;
+            --bg: #090a0f;
+            --surface: rgba(18, 20, 29, 0.7);
+            --surface-card: rgba(22, 25, 38, 0.85);
+            --surface-hover: rgba(30, 35, 54, 0.95);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(94, 234, 212, 0.35);
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
             --accent: #5eead4;
+            --accent-glow: rgba(94, 234, 212, 0.18);
             --accent-2: #f97316;
-            --accent-glow: rgba(94, 234, 212, 0.15);
             --error: #ef4444;
-            --success: #22c55e;
+            --success: #10b981;
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
         }
 
+        html { scroll-behavior: smooth; }
+
         body {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
             line-height: 1.6;
             color: var(--text);
             background: var(--bg);
             overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(94, 234, 212, 0.06) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(249, 115, 22, 0.05) 0%, transparent 40%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* Animated background */
+        /* Ambient Animated Grid */
         .bg-grid {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background-image: 
-                linear-gradient(rgba(94, 234, 212, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(94, 234, 212, 0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
+                linear-gradient(rgba(94, 234, 212, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(94, 234, 212, 0.02) 1px, transparent 1px);
+            background-size: 50px 50px;
             z-index: 0;
-            animation: gridMove 20s linear infinite;
+            pointer-events: none;
         }
 
-        @keyframes gridMove {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(60px, 60px); }
-        }
-
-        /* Floating orbs */
-        .orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(100px);
-            z-index: 0;
-            animation: orbFloat 15s ease-in-out infinite;
-        }
-
-        .orb-1 {
-            width: 500px; height: 500px;
-            background: var(--accent);
-            top: -200px; right: -200px;
-            opacity: 0.15;
-            animation-delay: 0s;
-        }
-
-        .orb-2 {
-            width: 400px; height: 400px;
-            background: var(--accent-2);
-            bottom: -150px; left: -150px;
-            opacity: 0.1;
-            animation-delay: -5s;
-        }
-
-        .orb-3 {
-            width: 300px; height: 300px;
-            background: var(--accent);
-            top: 50%; left: 50%;
-            opacity: 0.08;
-            animation-delay: -10s;
-        }
-
-        @keyframes orbFloat {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            25% { transform: translate(30px, -40px) scale(1.05); }
-            50% { transform: translate(-20px, 20px) scale(0.95); }
-            75% { transform: translate(15px, 15px) scale(1.02); }
-        }
-
-        /* Header */
+        /* Navigation Header */
         header {
-            background: rgba(10, 10, 10, 0.8);
+            background: rgba(9, 10, 15, 0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            padding: 1rem 0;
+            padding: 1.1rem 0;
             position: fixed;
             width: 100%;
             top: 0;
@@ -102,7 +72,11 @@
             transition: all 0.3s;
         }
 
-        header.scrolled { background: rgba(10, 10, 10, 0.95); }
+        header.scrolled {
+            background: rgba(9, 10, 15, 0.98);
+            border-bottom-color: rgba(94, 234, 212, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
 
         nav {
             display: flex;
@@ -115,446 +89,532 @@
 
         .logo {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 1.25rem;
+            font-size: 1.35rem;
             font-weight: 700;
             color: var(--accent);
             text-decoration: none;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .logo .tag {
+            font-size: 0.7rem;
+            background: rgba(94, 234, 212, 0.15);
+            color: var(--accent);
+            padding: 2px 7px;
+            border-radius: 6px;
+            border: 1px solid rgba(94, 234, 212, 0.3);
+            text-transform: uppercase;
         }
 
         .logo span { color: var(--accent-2); }
 
-        .nav-links { display: flex; list-style: none; gap: 2rem; }
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+            align-items: center;
+        }
 
         .nav-links a {
             text-decoration: none;
             color: var(--text-muted);
             font-weight: 500;
-            font-size: 0.9rem;
-            transition: color 0.3s;
-            position: relative;
-        }
-
-        .nav-links a::after {
-            content: '';
-            position: absolute;
-            bottom: -4px; left: 0;
-            width: 0; height: 2px;
-            background: var(--accent);
-            transition: width 0.3s;
+            font-size: 0.95rem;
+            transition: color 0.25s;
         }
 
         .nav-links a:hover { color: var(--text); }
-        .nav-links a:hover::after { width: 100%; }
 
-        /* Main Content */
+        /* Main Container */
         main {
             position: relative;
             z-index: 1;
-            min-height: 100vh;
-            padding: 120px 24px 60px;
+            flex: 1;
+            padding: 140px 24px 80px;
         }
 
-        .container { max-width: 1200px; margin: 0 auto; }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
 
-        /* Page Header */
         .page-header {
             text-align: center;
-            margin-bottom: 60px;
+            margin-bottom: 50px;
         }
 
         .page-label {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             color: var(--accent);
             text-transform: uppercase;
             letter-spacing: 2px;
-            margin-bottom: 1rem;
+            margin-bottom: 0.8rem;
         }
 
         .page-title {
-            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            font-size: clamp(2.4rem, 5vw, 3.4rem);
             font-weight: 700;
             letter-spacing: -1px;
             margin-bottom: 1rem;
         }
 
+        .gradient-text {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
         .page-subtitle {
             color: var(--text-muted);
             font-size: 1.1rem;
-            max-width: 500px;
+            max-width: 580px;
             margin: 0 auto;
         }
 
-        /* Content Grid */
+        /* Two-Column Grid */
         .content-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
+            grid-template-columns: 1fr 1.15fr;
+            gap: 3.5rem;
             align-items: start;
         }
 
-        /* Contact Info */
-        .contact-info h3 {
-            font-size: 1.25rem;
-            margin-bottom: 1.5rem;
-            color: var(--text);
+        /* Contact Details Cards */
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1.8rem;
         }
 
-        .contact-info p {
+        .info-card {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 2rem;
+            backdrop-filter: blur(12px);
+        }
+
+        .info-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #f8fafc;
+        }
+
+        .info-card p {
             color: var(--text-muted);
-            margin-bottom: 2rem;
-            line-height: 1.8;
+            font-size: 0.95rem;
+            line-height: 1.65;
+            margin-bottom: 1.5rem;
         }
 
         .contact-methods {
             display: flex;
             flex-direction: column;
-            gap: 1.25rem;
+            gap: 1rem;
         }
 
         .contact-method {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: var(--surface);
+            justify-content: space-between;
+            background: rgba(12, 14, 23, 0.7);
             border: 1px solid var(--border);
-            border-radius: 10px;
-            transition: all 0.3s;
+            border-radius: var(--radius-sm);
+            padding: 1rem 1.2rem;
             text-decoration: none;
-            color: inherit;
+            color: var(--text);
+            transition: all 0.25s ease;
         }
 
         .contact-method:hover {
-            border-color: var(--accent);
+            border-color: var(--border-hover);
             transform: translateX(4px);
-            background: var(--surface-2);
+            background: var(--surface-hover);
         }
 
-        .contact-method .icon {
-            width: 44px; height: 44px;
-            background: var(--surface-2);
-            border-radius: 8px;
+        .method-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .method-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: var(--radius-sm);
+            background: rgba(94, 234, 212, 0.1);
+            border: 1px solid rgba(94, 234, 212, 0.2);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.25rem;
-            flex-shrink: 0;
+            font-size: 1.2rem;
+            color: var(--accent);
         }
 
-        .contact-method h4 { font-size: 0.9rem; margin-bottom: 2px; }
-        .contact-method p { margin: 0; font-size: 0.85rem; color: var(--accent); }
-
-        /* GitHub Card */
-        .github-card {
-            margin-top: 2rem;
-            padding: 2rem;
-            background: linear-gradient(135deg, var(--surface) 0%, #1a1f2e 100%);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            position: relative;
-            overflow: hidden;
+        .method-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #f8fafc;
         }
 
-        .github-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 3px;
-            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        .method-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
         }
 
-        .github-card h4 { font-size: 1rem; margin-bottom: 0.5rem; }
-        .github-card p { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-size: 0.9rem; }
-        .github-card .repo-stats {
-            display: flex; gap: 1.5rem; margin-top: 1rem;
-            font-size: 0.8rem; color: var(--text-muted);
+        .method-copy {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
         }
-        .github-card .repo-stats span { display: flex; align-items: center; gap: 4px; }
 
-        /* Form */
+        .method-copy:hover {
+            background: var(--accent);
+            color: #042f2e;
+        }
+
+        /* Interactive Form Card */
         .form-card {
-            background: var(--surface);
+            background: var(--surface-card);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 2.5rem;
+            border-radius: var(--radius-lg);
+            padding: 2.8rem;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
             position: relative;
         }
 
-        .form-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 2px;
-            background: linear-gradient(90deg, var(--accent), var(--accent-2));
-            border-radius: 16px 16px 0 0;
+        .pill-group {
+            margin-bottom: 1.8rem;
         }
 
-        .form-group { margin-bottom: 1.5rem; }
+        .pill-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.6rem;
+            display: block;
+        }
+
+        .pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 6px 14px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .pill:hover, .pill.active {
+            background: rgba(94, 234, 212, 0.15);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
 
         .form-group label {
             display: block;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             font-weight: 500;
+            color: #e2e8f0;
             margin-bottom: 0.5rem;
-            color: var(--text);
         }
-
-        .form-group label .required { color: var(--accent); }
 
         .form-group input,
         .form-group textarea {
             width: 100%;
-            padding: 0.875rem 1rem;
-            background: var(--bg);
+            background: rgba(12, 14, 23, 0.9);
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
+            padding: 0.85rem 1.1rem;
             color: var(--text);
             font-family: inherit;
-            font-size: 1rem;
-            transition: all 0.3s;
-            outline: none;
+            font-size: 0.95rem;
+            transition: all 0.25s ease;
         }
 
         .form-group input:focus,
         .form-group textarea:focus {
+            outline: none;
             border-color: var(--accent);
             box-shadow: 0 0 0 3px var(--accent-glow);
-        }
-
-        .form-group input.error,
-        .form-group textarea.error {
-            border-color: var(--error);
+            background: rgba(12, 14, 23, 1);
         }
 
         .form-group textarea {
-            min-height: 120px;
+            min-height: 130px;
             resize: vertical;
         }
 
         .form-error {
             color: var(--error);
             font-size: 0.8rem;
-            margin-top: 0.4rem;
+            margin-top: 5px;
             display: none;
         }
 
         .form-error.show { display: block; }
 
-        /* Submit button */
         .btn-submit {
             width: 100%;
-            padding: 1rem 2rem;
-            background: var(--accent);
-            color: var(--bg);
+            padding: 0.9rem;
+            background: linear-gradient(135deg, var(--accent), #14b8a6);
+            color: #042f2e;
             border: none;
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
-            font-family: inherit;
-            position: relative;
-            overflow: hidden;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 1rem;
         }
 
         .btn-submit:hover {
-            background: var(--accent-2);
             transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(94, 234, 212, 0.2);
+            box-shadow: 0 6px 25px rgba(94, 234, 212, 0.4);
         }
-
-        .btn-submit:active { transform: translateY(0); }
 
         .btn-submit.loading {
             pointer-events: none;
-            opacity: 0.7;
+            opacity: 0.8;
         }
 
-        .btn-submit.loading::after {
-            content: '';
-            width: 18px; height: 18px;
-            border: 2px solid transparent;
-            border-top-color: var(--bg);
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-            display: inline-block;
-            margin-left: 10px;
-            vertical-align: middle;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Success message */
-        .success-message {
+        /* Success Card */
+        .success-card {
             display: none;
             text-align: center;
-            padding: 3rem 2rem;
+            padding: 2rem 0;
+            animation: fadeIn 0.4s ease;
         }
 
-        .success-message.show { display: block; }
+        .success-card.show { display: block; }
 
         .success-icon {
-            width: 80px; height: 80px;
-            background: var(--accent-glow);
+            width: 64px;
+            height: 64px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 1.5rem;
-            animation: successPop 0.5s ease;
+            color: var(--success);
+            font-size: 2rem;
         }
 
-        @keyframes successPop {
-            0% { transform: scale(0); opacity: 0; }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); opacity: 1; }
+        .success-card h3 {
+            font-size: 1.6rem;
+            margin-bottom: 0.75rem;
+            color: #f8fafc;
         }
 
-        .success-icon svg { width: 40px; height: 40px; stroke: var(--accent); }
+        .success-card p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
 
-        .success-message h3 { font-size: 1.5rem; margin-bottom: 0.5rem; }
-        .success-message p { color: var(--text-muted); }
+        .btn-reset {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.7rem 1.5rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-reset:hover {
+            background: var(--surface-hover);
+            border-color: var(--border-hover);
+        }
 
         /* Footer */
         footer {
-            background: var(--surface);
+            background: #07080b;
             border-top: 1px solid var(--border);
-            padding: 2rem 24px;
-            margin-top: 60px;
+            padding: 2.5rem 0;
             position: relative;
-            z-index: 1;
+            z-index: 2;
         }
 
         .footer-content {
-            max-width: 1200px; margin: 0 auto;
-            display: flex; justify-content: space-between;
-            align-items: center; flex-wrap: wrap; gap: 1rem;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
-        footer p { color: var(--text-muted); font-size: 0.9rem; }
-
+        .footer-content p { color: var(--text-muted); font-size: 0.9rem; }
         .footer-links { display: flex; gap: 1.5rem; list-style: none; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; transition: color 0.3s; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; transition: color 0.25s; }
         .footer-links a:hover { color: var(--accent); }
 
-        /* Scroll reveal */
-        .reveal {
-            opacity: 0;
-            transform: translateY(30px);
-            transition: opacity 0.6s ease, transform 0.6s ease;
+        @media (max-width: 868px) {
+            .content-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+            .form-card { padding: 1.8rem; }
+            main { padding: 120px 16px 50px; }
         }
 
-        .reveal.visible { opacity: 1; transform: translateY(0); }
-
-        @media (max-width: 768px) {
-            .content-grid { grid-template-columns: 1fr; gap: 2rem; }
-            .form-card { padding: 1.5rem; }
-            main { padding: 100px 16px 40px; }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after {
-                animation-duration: 0.01ms !important;
-                transition-duration: 0.01ms !important;
-            }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
     <div class="bg-grid"></div>
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
 
     <header id="header">
         <nav>
-            <a href="portfolio.html" class="logo">dev<span>-</span>mate</a>
+            <a href="portfolio.html" class="logo">
+                dev<span>-</span>mate <span class="tag">agent</span>
+            </a>
             <ul class="nav-links">
                 <li><a href="portfolio.html">Home</a></li>
-                <li><a href="contact.html" style="color: var(--accent);">Contact</a></li>
+                <li><a href="portfolio.html#about">Architecture</a></li>
+                <li><a href="portfolio.html#safety">Safety Model</a></li>
+                <li><a href="contact.html" style="color: var(--accent); font-weight: 600;">Contact</a></li>
             </ul>
         </nav>
     </header>
 
     <main>
         <div class="container">
-            <div class="page-header reveal">
-                <p class="page-label">// Get in Touch</p>
-                <h1 class="page-title">Let's build something worth building</h1>
-                <p class="page-subtitle">Have a project, idea, or just want to talk shop? Drop me a message and I'll get back to you within 24 hours.</p>
+            <div class="page-header">
+                <p class="page-label">// Connect</p>
+                <h1 class="page-title">Let's build something <span class="gradient-text">resilient.</span></h1>
+                <p class="page-subtitle">Have questions on Dev-Mate architecture, need deployment assistance, or want to contribute? Reach out directly.</p>
             </div>
 
             <div class="content-grid">
+                <!-- Contact Information -->
                 <div class="contact-info">
-                    <h3 class="reveal">Why reach out?</h3>
-                    <p class="reveal reveal-delay-1">I'm currently available for freelance work, open-source collaborations, and full-time opportunities. Whether it's a bug, a feature request, or just a hello &mdash; I read every message.</p>
-                    
-                    <div class="contact-methods">
-                        <a href="mailto:hello@dev-mate.ai" class="contact-method reveal">
-                            <div class="icon">&#9993;</div>
-                            <div>
-                                <h4>Email</h4>
-                                <p>hello@dev-mate.ai</p>
-                            </div>
-                        </a>
-                        <a href="https://github.com/dev-mate/dev-mate" target="_blank" rel="noopener" class="contact-method reveal reveal-delay-1">
-                            <div class="icon">&#9881;</div>
-                            <div>
-                                <h4>GitHub</h4>
-                                <p>github.com/dev-mate/dev-mate</p>
-                            </div>
-                        </a>
-                        <a href="https://linkedin.com/in/dev-mate" target="_blank" rel="noopener" class="contact-method reveal reveal-delay-2">
-                            <div class="icon">&#128100;</div>
-                            <div>
-                                <h4>LinkedIn</h4>
-                                <p>linkedin.com/in/dev-mate</p>
-                            </div>
-                        </a>
-                    </div>
+                    <div class="info-card">
+                        <h3>Direct Communication</h3>
+                        <p>We review every bug report, feature request, and security inquiry. For rapid issue tracking, GitHub is preferred.</p>
 
-                    <div class="github-card reveal reveal-delay-3">
-                        <h4>Repository</h4>
-                        <p>github.com/dev-mate/dev-mate</p>
-                        <div class="repo-stats">
-                            <span>&#8986; Public</span>
-                            <span>&#9889; Stars</span>
-                            <span>&#9989; Open Issues</span>
+                        <div class="contact-methods">
+                            <div class="contact-method">
+                                <div class="method-left">
+                                    <div class="method-icon">&#9993;</div>
+                                    <div>
+                                        <div class="method-title">Direct Email</div>
+                                        <div class="method-val" id="emailVal">hello@dev-mate.ai</div>
+                                    </div>
+                                </div>
+                                <button class="method-copy" onclick="copyText('hello@dev-mate.ai', this)">Copy</button>
+                            </div>
+
+                            <div class="contact-method">
+                                <div class="method-left">
+                                    <div class="method-icon">&#9881;</div>
+                                    <div>
+                                        <div class="method-title">GitHub Project</div>
+                                        <div class="method-val" id="ghVal">github.com/dev-mate/dev-mate</div>
+                                    </div>
+                                </div>
+                                <button class="method-copy" onclick="copyText('https://github.com/dev-mate/dev-mate', this)">Copy</button>
+                            </div>
+
+                            <div class="contact-method">
+                                <div class="method-left">
+                                    <div class="method-icon">&#128274;</div>
+                                    <div>
+                                        <div class="method-title">Security Reports</div>
+                                        <div class="method-val">security@dev-mate.ai</div>
+                                    </div>
+                                </div>
+                                <button class="method-copy" onclick="copyText('security@dev-mate.ai', this)">Copy</button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="form-card reveal">
-                    <form id="contactForm" style="display: block;">
-                        <div class="form-group">
-                            <label for="name">Name <span class="required">*</span></label>
-                            <input type="text" id="name" name="name" placeholder="Jane Developer" required>
-                            <p class="form-error">Please enter your name</p>
+                <!-- Form Card -->
+                <div class="form-card">
+                    <form id="contactForm">
+                        <div class="pill-group">
+                            <span class="pill-label">Select topic preset:</span>
+                            <div class="pills">
+                                <span class="pill active" onclick="setTopic('General Inquiry', this)">Inquiry</span>
+                                <span class="pill" onclick="setTopic('Bug Report', this)">Bug Report</span>
+                                <span class="pill" onclick="setTopic('Feature Request', this)">Feature Idea</span>
+                                <span class="pill" onclick="setTopic('Security Feedback', this)">Security</span>
+                            </div>
                         </div>
+
                         <div class="form-group">
-                            <label for="email">Email <span class="required">*</span></label>
-                            <input type="email" id="email" name="email" placeholder="jane@example.com" required>
-                            <p class="form-error">Please enter a valid email</p>
+                            <label for="name">Your Name *</label>
+                            <input type="text" id="name" placeholder="Alex Rivers" required>
+                            <p class="form-error" id="nameError">Please enter your name.</p>
                         </div>
+
+                        <div class="form-group">
+                            <label for="email">Email Address *</label>
+                            <input type="email" id="email" placeholder="alex@engineering.com" required>
+                            <p class="form-error" id="emailError">Please enter a valid email address.</p>
+                        </div>
+
                         <div class="form-group">
                             <label for="subject">Subject</label>
-                            <input type="text" id="subject" name="subject" placeholder="What's this about?">
+                            <input type="text" id="subject" value="[Inquiry] Connecting with Dev-Mate team" required>
                         </div>
+
                         <div class="form-group">
-                            <label for="message">Message <span class="required">*</span></label>
-                            <textarea id="message" name="message" placeholder="Tell me about your project, idea, or just say hello..." required></textarea>
-                            <p class="form-error">Please enter your message</p>
+                            <label for="message">Message *</label>
+                            <textarea id="message" placeholder="Describe your question, project setup, or issue details..." required></textarea>
+                            <p class="form-error" id="messageError">Please enter a message.</p>
                         </div>
-                        <button type="submit" class="btn-submit" id="submitBtn">Send Message</button>
+
+                        <button type="submit" class="btn-submit" id="submitBtn">
+                            <span>Send Message</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </button>
                     </form>
 
-                    <div class="success-message" id="successMessage">
-                        <div class="success-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M20 6L9 17l-5-5"/>
-                            </svg>
-                        </div>
-                        <h3>Message sent!</h3>
-                        <p>I'll get back to you within 24 hours.</p>
+                    <!-- Success State -->
+                    <div class="success-card" id="successCard">
+                        <div class="success-icon">&#10003;</div>
+                        <h3>Message Dispatched!</h3>
+                        <p>Thank you for reaching out. We will review your note and respond within 24 hours.</p>
+                        <button class="btn-reset" onclick="resetForm()">Send Another Message</button>
                     </div>
                 </div>
             </div>
@@ -563,86 +623,90 @@
 
     <footer>
         <div class="footer-content">
-            <p>&copy; 2024 Dev-Mate. Built with care for developers, by developers.</p>
+            <p>&copy; 2026 Dev-Mate. Engineered for developers, by developers.</p>
             <ul class="footer-links">
-                <li><a href="portfolio.html">Portfolio</a></li>
+                <li><a href="portfolio.html">Home</a></li>
                 <li><a href="https://github.com/dev-mate/dev-mate" target="_blank" rel="noopener">GitHub</a></li>
             </ul>
         </div>
     </footer>
 
     <script>
-        // Scroll reveal
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                }
-            });
-        }, { threshold: 0.15 });
-
-        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
         // Header scroll effect
         const header = document.getElementById('header');
         window.addEventListener('scroll', () => {
-            header.classList.toggle('scrolled', window.scrollY > 50);
+            header.classList.toggle('scrolled', window.scrollY > 40);
         });
 
-        // Form validation and submission
+        // Pill presets
+        function setTopic(topic, element) {
+            document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+            element.classList.add('active');
+            document.getElementById('subject').value = `[${topic}] `;
+        }
+
+        // Copy text helper
+        function copyText(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = "Copied!";
+                btn.style.background = "#10b981";
+                btn.style.color = "#042f2e";
+                setTimeout(() => {
+                    btn.textContent = orig;
+                    btn.style.background = "";
+                    btn.style.color = "";
+                }, 2000);
+            });
+        }
+
+        // Form Submission
         const form = document.getElementById('contactForm');
-        const successMessage = document.getElementById('successMessage');
+        const successCard = document.getElementById('successCard');
         const submitBtn = document.getElementById('submitBtn');
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            // Validate
+
             let valid = true;
             const name = document.getElementById('name');
             const email = document.getElementById('email');
             const message = document.getElementById('message');
-            const errors = document.querySelectorAll('.form-error');
-            errors.forEach(err => err.classList.remove('show'));
+
+            document.querySelectorAll('.form-error').forEach(err => err.classList.remove('show'));
 
             if (!name.value.trim()) {
-                name.classList.add('error');
-                name.nextElementSibling.classList.add('show');
+                document.getElementById('nameError').classList.add('show');
                 valid = false;
             }
             if (!email.value.trim() || !email.value.includes('@')) {
-                email.classList.add('error');
-                email.nextElementSibling.classList.add('show');
+                document.getElementById('emailError').classList.add('show');
                 valid = false;
             }
             if (!message.value.trim()) {
-                message.classList.add('error');
-                message.nextElementSibling.classList.add('show');
+                document.getElementById('messageError').classList.add('show');
                 valid = false;
             }
 
             if (!valid) return;
 
-            // Simulate sending
             submitBtn.classList.add('loading');
-            submitBtn.textContent = 'Sending';
+            submitBtn.querySelector('span').textContent = "Dispatching...";
 
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Simulate network dispatch
+            await new Promise(res => setTimeout(res, 800));
 
-            form.style.display = 'none';
-            successMessage.classList.add('show');
+            form.style.display = "none";
+            successCard.classList.add('show');
         });
 
-        // Clear errors on input
-        document.querySelectorAll('input, textarea').forEach(el => {
-            el.addEventListener('input', () => {
-                el.classList.remove('error');
-                const err = el.nextElementSibling;
-                if (err && err.classList.contains('form-error')) {
-                    err.classList.remove('show');
-                }
-            });
-        });
+        function resetForm() {
+            form.reset();
+            form.style.display = "block";
+            successCard.classList.remove('show');
+            submitBtn.classList.remove('loading');
+            submitBtn.querySelector('span').textContent = "Send Message";
+        }
     </script>
 </body>
 </html>

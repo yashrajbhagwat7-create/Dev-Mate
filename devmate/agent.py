@@ -1,6 +1,12 @@
+"""Agent core orchestrator and engineering loop with Antigravity-style token optimization."""
+
 import json
 import time
-from .providers import make_provider
+from typing import Any, Dict, List
+
+from .providers import make_provider, ProviderError
+from .ui import badge, panel, style, Color, colorize_diff
+from .context import optimize_conversation, TokenTracker, estimate_messages_tokens
 
 
 SYSTEM = """You are Dev-Mate, a careful AI software engineer operating on a real local project.
@@ -17,15 +23,15 @@ Rules:
 - Use the provided project memory when it is relevant.
 - Do not assume memory is always correct; verify important facts from the actual files.
 - In engineering mode, pursue measurable improvement, but stop at the checkpoint instead of continuing silently.
+- Never attempt to read, write, or access .env files or .git internals; they are strictly guarded.
 """
-
 
 TOOL_SCHEMAS = [
     {
         "type": "function",
         "function": {
             "name": "list_files",
-            "description": "List project files.",
+            "description": "List project files in a given directory.",
             "parameters": {
                 "type": "object",
                 "properties": {"path": {"type": "string"}},
@@ -37,7 +43,7 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "read_file",
-            "description": "Read a text file with line numbers.",
+            "description": "Read a text file with line numbers in chunks.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -123,7 +129,7 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "run_python",
-            "description": "Run a Python file from the project root.",
+            "description": "Run a Python script safely within the project environment.",
             "parameters": {
                 "type": "object",
                 "properties": {"path": {"type": "string"}},
@@ -159,11 +165,37 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "project_summary",
-            "description": "Summarize project structure.",
+            "description": "Summarize project structure compactly.",
             "parameters": {
                 "type": "object",
                 "properties": {},
                 "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "delegate_task",
+            "description": "Delegate a focused task or sub-investigation to a specialized subagent. Can specify provider ('google', 'openrouter', or 'peer') to run models side-by-side.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "role": {
+                        "type": "string",
+                        "description": "Role of the subagent: 'researcher' (read-only file/symbol inspection), 'reviewer' (code critique & verification), 'debugger' (root cause diagnosis), or 'general'"
+                    },
+                    "prompt": {
+                        "type": "string",
+                        "description": "Specific task or questions for the subagent to investigate"
+                    },
+                    "provider": {
+                        "type": "string",
+                        "description": "Provider to use: 'google', 'openrouter', 'peer' (uses the alternate model for cross-verification), or 'inherit'",
+                        "enum": ["google", "openrouter", "peer", "inherit"]
+                    }
+                },
+                "required": ["role", "prompt"]
             }
         }
     },
@@ -175,77 +207,98 @@ class Agent:
         self.config = config
         self.toolbox = toolbox
         self.provider = make_provider(config)
-        self.history = []
+        self.tracker = TokenTracker()
 
         self.dispatch = {
             n["function"]["name"]: getattr(toolbox, n["function"]["name"])
             for n in TOOL_SCHEMAS
         }
 
-    def _call(self, messages):
-        for turn in range(self.config.max_agent_turns):
-            result = self.provider.chat(messages, TOOL_SCHEMAS)
-
-            msg = result["message"]
-            messages.append(msg)
-
-            calls = msg.get("tool_calls", [])
-
-            if not calls:
-                return msg.get("content", "")
-
-            for call in calls:
-                name = call["function"]["name"]
+    def _call(self, messages: List[Dict[str, Any]]) -> str:
+        try:
+            for turn in range(self.config.max_agent_turns):
+                # Dynamic token optimization (Antigravity-style rolling compaction)
+                if getattr(self.config, "compact_context", True):
+                    messages, current_tokens, saved = optimize_conversation(
+                        messages,
+                        max_tokens=self.config.max_context_tokens,
+                        keep_recent_turns=2
+                    )
+                    self.tracker.record_call(current_tokens, saved)
+                    if saved > 0 and turn > 1:
+                        print(f"  {badge('OPT', 'dim')} {style(self.tracker.badge_str(current_tokens, saved), Color.DIM)}")
 
                 try:
-                    args = json.loads(
-                        call["function"].get("arguments", "{}")
-                    )
-                except Exception:
-                    args = {}
+                    result = self.provider.chat(messages, TOOL_SCHEMAS)
+                except ProviderError as pe:
+                    print(f"\n{badge('ERROR', 'fail')} {style(str(pe), Color.BRIGHT_RED)}")
+                    return f"Agent stopped due to provider error: {pe}"
 
-                if name not in self.dispatch:
-                    out = f"Unknown tool: {name}"
-                else:
-                    try:
-                        print(
-                            f"\n[tool] {name}("
-                            f"{json.dumps(args, ensure_ascii=False)[:500]})"
-                        )
+                msg = result["message"]
+                messages.append(msg)
 
-                        out = self.dispatch[name](**args)
+                calls = msg.get("tool_calls", [])
 
-                    except Exception as e:
-                        out = (
-                            f"TOOL ERROR: "
-                            f"{type(e).__name__}: {e}"
-                        )
+                if not calls:
+                    return msg.get("content", "")
 
-                messages.append(
-                    {
+                for call in calls:
+                    fn = call.get("function") or {}
+                    name = fn.get("name", "")
+                    raw_args = fn.get("arguments", "{}")
+
+                    if isinstance(raw_args, str):
+                        try:
+                            args = json.loads(raw_args)
+                        except Exception:
+                            args = {}
+                    elif isinstance(raw_args, dict):
+                        args = raw_args
+                    else:
+                        args = {}
+
+                    if not isinstance(args, dict):
+                        args = {}
+
+                    if name not in self.dispatch:
+                        out = f"Unknown tool: {name}"
+                        print(f"\n{badge('WARN', 'warn')} Unknown tool requested: {name}")
+                    else:
+                        arg_summary = json.dumps(args, ensure_ascii=False)
+                        if len(arg_summary) > 100:
+                            arg_summary = arg_summary[:97] + "..."
+
+                        print(f"\n{badge('TOOL', 'cyan')} {style(name, Color.BOLD, Color.BRIGHT_WHITE)}({style(arg_summary, Color.DIM)})")
+
+                        try:
+                            out = self.dispatch[name](**args)
+                            print(f"  {badge('OK', 'pass')} {style('Completed', Color.DIM)}")
+                        except PermissionError as pe:
+                            out = f"SECURITY ERROR: {pe}"
+                            print(f"  {badge('BLOCKED', 'fail')} {style(str(pe), Color.BRIGHT_RED)}")
+                        except Exception as e:
+                            out = f"TOOL ERROR: {type(e).__name__}: {e}"
+                            print(f"  {badge('ERROR', 'fail')} {style(str(e), Color.BRIGHT_RED)}")
+
+                    messages.append({
                         "role": "tool",
                         "tool_call_id": call.get("id", ""),
                         "name": name,
                         "content": str(out)
-                    }
-                )
+                    })
 
-        return "Stopped: maximum agent turns reached."
+            return "Stopped: maximum agent turns reached."
+        except KeyboardInterrupt:
+            print(f"\n{badge('CANCELLED', 'warn')} {style('Task turn cancelled by user (Ctrl+C). Returning to prompt.', Color.BRIGHT_YELLOW)}")
+            return "Task cancelled by user."
 
-    def run(self, user_prompt, mode=None):
+    def run(self, user_prompt: str, mode: str = None) -> str:
         mode = mode or self.config.mode
 
         context = self.toolbox.project_summary()
-
         memory_context = self.toolbox.memory.get_context()
-
-        recent = self.toolbox.memory.recent_activity(limit=10)
-
-        recent_context = json.dumps(
-            recent,
-            indent=2,
-            ensure_ascii=False
-        )
+        recent = self.toolbox.memory.recent_activity(limit=8)
+        recent_context = json.dumps(recent, indent=2, ensure_ascii=False)
 
         system_context = f"""
 {SYSTEM}
@@ -261,37 +314,23 @@ Recent activity:
 """
 
         messages = [
-            {
-                "role": "system",
-                "content": system_context
-            },
-            {
-                "role": "user",
-                "content": user_prompt
-            }
+            {"role": "system", "content": system_context},
+            {"role": "user", "content": user_prompt}
         ]
 
         result = self._call(messages)
-
-        self.toolbox.memory.log(
-            "AGENT",
-            user_prompt[:500],
-            "PASS"
-        )
-
+        self.toolbox.memory.log("AGENT", user_prompt[:300], "PASS")
         return result
 
-    def engineer(self, goal, autonomous=False):
+    def engineer(self, goal: str, autonomous: bool = False):
         max_iter = self.config.max_engineering_iterations
 
-        for i in range(1, max_iter + 1):
-            print(
-                f"\n{'=' * 70}\n"
-                f"ENGINEERING ITERATION {i}/{max_iter}\n"
-                f"{'=' * 70}"
-            )
+        try:
+            for i in range(1, max_iter + 1):
+                header = f"ENGINEERING ITERATION {i}/{max_iter}"
+                print(f"\n{panel(header, f'Goal: {goal}', border_color=Color.BRIGHT_CYAN)}")
 
-            prompt = f"""Engineering goal: {goal}
+                prompt = f"""Engineering goal: {goal}
 
 This is iteration {i}.
 
@@ -307,28 +346,25 @@ implement it with tools, run relevant verification, and report:
 Use project memory when relevant.
 Do not make a speculative large rewrite.
 """
+                result = self.run(prompt, "engineer")
+                print(f"\n{panel('Iteration Summary', result, border_color=Color.BRIGHT_GREEN)}")
 
-            result = self.run(prompt, "engineer")
-
-            print("\n" + result)
-
-            if not autonomous or not self.config.auto_approve_checkpoints:
-                ans = input(
-                    "\nCheckpoint: continue to the next improvement? "
-                    "[Y/n/v=show git diff/r=revert manually] "
-                ).strip().lower()
-
-                if ans in {"n", "no", "stop", "q"}:
-                    break
-
-                if ans == "v":
-                    print(self.toolbox.git_diff())
-
+                if not autonomous or not self.config.auto_approve_checkpoints:
                     ans = input(
-                        "Continue? [Y/n] "
+                        f"\n{style('Checkpoint', Color.BOLD, Color.BRIGHT_YELLOW)}: continue to next improvement? "
+                        f"[{style('Y', Color.BOLD)}/n/v=view diff/r=revert] "
                     ).strip().lower()
 
-                    if ans in {"n", "no"}:
+                    if ans in {"n", "no", "stop", "q"}:
                         break
 
-        print("\nEngineering loop stopped.")
+                    if ans == "v":
+                        diff = self.toolbox.git_diff()
+                        print(f"\n{panel('Git Diff', colorize_diff(diff))}")
+                        ans = input("Continue? [Y/n] ").strip().lower()
+                        if ans in {"n", "no"}:
+                            break
+
+            print(f"\n{badge('STOP', 'info')} Engineering loop completed.")
+        except KeyboardInterrupt:
+            print(f"\n{badge('CANCELLED', 'warn')} {style('Engineering loop interrupted by user (Ctrl+C). Returning to prompt.', Color.BRIGHT_YELLOW)}")
