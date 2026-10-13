@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.11+" />
   <img src="https://img.shields.io/badge/Security-Hardened-059669?style=for-the-badge&logo=shield&logoColor=white" alt="Security Hardened" />
-  <img src="https://img.shields.io/badge/Tests-35%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests Passed" />
+  <img src="https://img.shields.io/badge/Tests-44%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests Passed" />
   <img src="https://img.shields.io/badge/Multi--Agent-Swarm%20%26%20Delegation-EC4899?style=for-the-badge&logo=probot&logoColor=white" alt="Multi-Agent Swarm" />
   <img src="https://img.shields.io/badge/Context-Antigravity%20Compacted-8B5CF6?style=for-the-badge&logo=fastapi&logoColor=white" alt="Context Optimizer" />
   <img src="https://img.shields.io/badge/Providers-Google%20Gemini%20%2B%20OpenRouter-6366F1?style=for-the-badge&logo=google&logoColor=white" alt="Providers" />
@@ -191,7 +191,9 @@ Run the comprehensive test suite:
 pytest -v
 ```
 
-All 35 test cases verify:
+All 44 test cases verify:
+- Interactive clarification protocol & anti-hallucination guardrails (`ask_clarification`)
+- Grounding and project identity preservation
 - Multi-agent swarm orchestration & dual-provider deliberation (Gemini + OpenRouter)
 - Subagent role isolation (researcher, reviewer, debugger, general)
 - Cross-model peer provider auto-selection

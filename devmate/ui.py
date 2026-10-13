@@ -143,3 +143,50 @@ def colorize_diff(diff_text: str) -> str:
         else:
             colored_lines.append(line)
     return "\n".join(colored_lines)
+
+
+def render_clarification_card(question: str, options: list = None) -> str:
+    """Format an interactive clarification modal card."""
+    clean_options = [str(o).strip() for o in (options or []) if str(o).strip()]
+    lines = [
+        f"{style('Question:', Color.BOLD, Color.BRIGHT_WHITE)} {question}",
+    ]
+    if clean_options:
+        lines.append("")
+        lines.append(f"{style('Select an option or type a custom answer:', Color.DIM)}")
+        for idx, opt in enumerate(clean_options, 1):
+            lines.append(f"  {style(f'[{idx}]', Color.BOLD, Color.BRIGHT_CYAN)} {opt}")
+        lines.append(f"  {style(f'[{len(clean_options) + 1}]', Color.DIM)} Custom response (type directly)")
+
+    return panel("❓ Clarification Needed", "\n".join(lines), border_color=Color.BRIGHT_YELLOW)
+
+
+def prompt_clarification(question: str, options: list = None) -> str:
+    """Display clarification card and collect user choice or custom text input."""
+    clean_options = [str(o).strip() for o in (options or []) if str(o).strip()]
+    card = render_clarification_card(question, clean_options)
+    print(f"\n{card}")
+
+    prompt_label = (
+        f"  {style('Enter selection [1-' + str(len(clean_options)) + '] or write answer', Color.BOLD, Color.BRIGHT_YELLOW)}: "
+        if clean_options else
+        f"  {style('Your answer', Color.BOLD, Color.BRIGHT_YELLOW)}: "
+    )
+
+    try:
+        ans = input(prompt_label).strip()
+    except (KeyboardInterrupt, EOFError):
+        print()
+        return "Clarification interrupted by user."
+
+    if not ans:
+        if clean_options:
+            return clean_options[0]
+        return "No specific clarification provided."
+
+    if clean_options and ans.isdigit():
+        idx = int(ans)
+        if 1 <= idx <= len(clean_options):
+            return clean_options[idx - 1]
+
+    return ans

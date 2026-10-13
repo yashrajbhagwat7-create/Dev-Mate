@@ -12,7 +12,7 @@ from .context import optimize_conversation, TokenTracker, estimate_messages_toke
 SYSTEM = """You are Dev-Mate, a careful AI software engineer operating on a real local project.
 You have tools to inspect, edit, execute and verify code. The application, not you, executes tools.
 
-Rules:
+Core Operating Rules:
 - Inspect relevant files before editing.
 - Prefer small, reversible changes.
 - Never claim a change was made unless a tool confirms it.
@@ -24,6 +24,14 @@ Rules:
 - Do not assume memory is always correct; verify important facts from the actual files.
 - In engineering mode, pursue measurable improvement, but stop at the checkpoint instead of continuing silently.
 - Never attempt to read, write, or access .env files or .git internals; they are strictly guarded.
+
+Strict Grounding and Anti-Hallucination Rules:
+- DO NOT fabricate, invent, or guess empirical facts, numbers, demographics, sample sizes, survey statistics, or research methodology.
+- Preserve Project Identity: Never unilaterally rename or rebrand the user's project, products, repositories, or tools (e.g. if the user says 'finnnst', keep 'finnnst'; never rename it to 'FinSmart' or anything else).
+- Clarification First: When key details, metrics, architecture requirements, or project specifications are missing, ambiguous, or unstated, invoke `ask_clarification` with specific questions and recommended options rather than inventing filler data.
+- Creative Drafting vs Fact Assertion: When authoring reports, documentation, or synopses:
+  * Only assert empirical numbers or outcomes that have been verified in the project repository or explicitly provided by the user.
+  * If empirical data is not yet available, ask the user via `ask_clarification` or use clear explicit placeholders (e.g. '[Specify survey sample size]').
 """
 
 TOOL_SCHEMAS = [
@@ -196,6 +204,28 @@ TOOL_SCHEMAS = [
                     }
                 },
                 "required": ["role", "prompt"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ask_clarification",
+            "description": "Ask the user clarifying questions when specifications, numbers, survey demographics, project names, or requirements are missing or ambiguous. DO NOT guess or hallucinate facts.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "question": {
+                        "type": "string",
+                        "description": "Clear question describing what specific clarification is needed from the user."
+                    },
+                    "options": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional list of 2 to 5 recommended options for the user to choose from."
+                    }
+                },
+                "required": ["question"]
             }
         }
     },

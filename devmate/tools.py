@@ -14,6 +14,7 @@ from pathlib import Path
 
 from .memory import Memory
 from .context import compress_text
+from .ui import prompt_clarification
 
 
 TEXT_EXTS = {
@@ -106,10 +107,11 @@ def safe_path(root: Path, rel: str, allow_env_example: bool = True) -> Path:
 
 
 class ToolBox:
-    def __init__(self, config, approve):
+    def __init__(self, config, approve, clarify=None):
         self.root = config.root.resolve()
         self.cfg = config
         self.approve = approve
+        self.clarify = clarify or prompt_clarification
         self.memory = Memory(config)
 
         self.cfg.devmate_dir.mkdir(exist_ok=True)
@@ -446,3 +448,13 @@ class ToolBox:
         report = sub.execute(prompt)
         self.memory.log("DELEGATE", f"role={role}, provider={provider}, prompt={prompt[:100]}", "PASS")
         return report
+
+    def ask_clarification(self, question: str, options: list = None) -> str:
+        """Ask the user clarifying questions when project details, facts, or specifications are ambiguous or missing."""
+        if not question or not str(question).strip():
+            return "Error: A clear clarification question is required."
+
+        opts = options if isinstance(options, list) else []
+        ans = self.clarify(str(question).strip(), opts)
+        self.memory.log("CLARIFY", f"Q: {question[:80]} | A: {str(ans)[:80]}", "PASS")
+        return f"User Clarification Response:\n{ans}"

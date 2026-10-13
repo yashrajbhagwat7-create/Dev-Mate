@@ -11,7 +11,7 @@ from .tools import ToolBox
 from .agent import Agent
 from .reader import InputReader
 from .subagent import MultiAgentSwarm
-from .ui import banner, badge, panel, style, Color, colorize_diff
+from .ui import banner, badge, panel, style, Color, colorize_diff, prompt_clarification
 
 
 def print_help():
@@ -62,7 +62,7 @@ def main():
         resp = input(f"{style(prompt_text, Color.BOLD, Color.BRIGHT_YELLOW)}").strip().lower()
         return resp in {"y", "yes"}
 
-    box = ToolBox(cfg, approve)
+    box = ToolBox(cfg, approve, clarify=prompt_clarification)
     agent = Agent(cfg, box)
     swarm = MultiAgentSwarm(cfg, box)
     reader = InputReader(root)
