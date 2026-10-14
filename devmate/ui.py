@@ -1,7 +1,10 @@
 """Terminal UI formatting, colors, and visual presentation for Dev-Mate."""
 
 import os
+import re
 import sys
+from dataclasses import dataclass
+from typing import Optional, List, Union, Callable
 
 # Detect color support
 _USE_COLOR = sys.stdout.isatty() and os.getenv("NO_COLOR") is None
@@ -190,3 +193,210 @@ def prompt_clarification(question: str, options: list = None) -> str:
             return clean_options[idx - 1]
 
     return ans
+
+
+class RiskLevel:
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
+
+@dataclass
+class PermissionRequest:
+    action: str
+    target: str = ""
+    risk: str = "MEDIUM"
+    details: str = ""
+    diff: str = ""
+
+    def __str__(self) -> str:
+        target_str = f" on '{self.target}'" if self.target else ""
+        return f"{self.action}{target_str} [Risk: {self.risk}]"
+
+
+class PermissionDecision:
+    """Structured decision returned by the permission protocol."""
+
+    def __init__(
+        self,
+        approved: bool,
+        action: str = "proceed",
+        feedback: str = "",
+        view_diff: bool = False,
+    ):
+        self.approved = approved
+        self.action = action  # "proceed", "diff", "abort", "feedback"
+        self.feedback = feedback
+        self.view_diff = view_diff
+
+    def __bool__(self) -> bool:
+        return self.approved
+
+    def __repr__(self) -> str:
+        return (
+            f"<PermissionDecision approved={self.approved} "
+            f"action='{self.action}' feedback='{self.feedback}'>"
+        )
+
+
+DANGEROUS_COMMAND_PATTERNS = [
+    r"format\s+[a-zA-Z]:",
+    r"del\s+/[fFqsSQ\s]*[cC]:\\",
+    r"rm\s+-rf\s+[/~]",
+    r":\(\)\s*\{\s*:\|:&\s*\};:",
+    r"\bmkfs\b",
+    r"\bdd\s+if=",
+    r"\brm\s+-[rf]{1,2}\b",
+    r"\brmdir\s+/[sq]\b",
+    r"\bdel\s+/[fqs]\b",
+    r"\bformat\b",
+    r"\bdrop\s+database\b",
+    r"\bdrop\s+table\b",
+    r"\btruncate\s+table\b",
+    r"\bkill\b",
+    r"\bshutdown\b",
+    r"\bgit\s+reset\s+--hard\b",
+    r"\bgit\s+clean\s+-[fdx]{1,3}\b",
+]
+
+
+def classify_risk(action: str, target: str = "") -> str:
+    """Classify an action's risk level into LOW, MEDIUM, or HIGH."""
+    combined = f"{action} {target}".lower()
+
+    if any(re.search(pat, combined, re.IGNORECASE) for pat in DANGEROUS_COMMAND_PATTERNS):
+        return RiskLevel.HIGH
+    if any(kw in action.lower() for kw in ["delete", "remove", "destroy", "wipe", "drop"]):
+        return RiskLevel.HIGH
+
+    low_keywords = [
+        "read", "search", "list", "status", "diff",
+        "summary", "checkpoint", "inspect", "clarification"
+    ]
+    if any(kw in action.lower() for kw in low_keywords) and not any(k in combined for k in ["delete", "drop", "destroy", "format", "rm"]):
+        return RiskLevel.LOW
+
+    return RiskLevel.MEDIUM
+
+
+def render_permission_card(request: PermissionRequest) -> str:
+    """Format an interactive permission modal card matching Antigravity style."""
+    risk = (request.risk or RiskLevel.MEDIUM).upper()
+    if risk == RiskLevel.HIGH:
+        border_col = Color.BRIGHT_RED
+        risk_badge = f"{style('🔴 HIGH RISK', Color.BOLD, Color.BRIGHT_RED)}"
+    elif risk == RiskLevel.LOW:
+        border_col = Color.BRIGHT_GREEN
+        risk_badge = f"{style('🟢 LOW RISK', Color.BOLD, Color.BRIGHT_GREEN)}"
+    else:
+        border_col = Color.BRIGHT_YELLOW
+        risk_badge = f"{style('🟡 MEDIUM RISK', Color.BOLD, Color.BRIGHT_YELLOW)}"
+
+    lines = [
+        f"{style('Action:', Color.BOLD, Color.BRIGHT_WHITE)} {request.action}",
+    ]
+    if request.target:
+        lines.append(f"{style('Target:', Color.BOLD, Color.BRIGHT_WHITE)} {request.target}")
+    lines.append(f"{style('Risk Level:', Color.BOLD, Color.BRIGHT_WHITE)} {risk_badge}")
+
+    if request.details:
+        lines.append("")
+        lines.append(f"{style('Details:', Color.BOLD, Color.BRIGHT_WHITE)} {request.details}")
+
+    if request.diff:
+        lines.append("")
+        lines.append(f"{style('Preview Diff:', Color.BOLD, Color.BRIGHT_WHITE)}")
+        diff_lines = request.diff.strip().splitlines()
+        for dl in diff_lines[:6]:
+            if dl.startswith("+"):
+                lines.append(f"  {style(dl[:70], Color.BRIGHT_GREEN)}")
+            elif dl.startswith("-"):
+                lines.append(f"  {style(dl[:70], Color.BRIGHT_RED)}")
+            else:
+                lines.append(f"  {dl[:70]}")
+        if len(diff_lines) > 6:
+            lines.append(f"  {style(f'... [{len(diff_lines) - 6} more lines, select [2] to inspect full diff]', Color.DIM)}")
+
+    lines.append("")
+    lines.append(f"{style('Select an option or write custom feedback:', Color.DIM)}")
+    lines.append(f"  {style('[1]', Color.BOLD, Color.BRIGHT_GREEN)} Proceed with change")
+    lines.append(f"  {style('[2]', Color.BOLD, Color.BRIGHT_CYAN)} Inspect full diff / details")
+    lines.append(f"  {style('[3]', Color.BOLD, Color.BRIGHT_RED)} Abort / Skip")
+    lines.append(f"  {style('[4]', Color.BOLD, Color.BRIGHT_MAGENTA)} Provide feedback / custom instructions")
+
+    return panel("🛡️ Permission Required", "\n".join(lines), border_color=border_col)
+
+
+def prompt_permission(
+    request: Union[PermissionRequest, str],
+    diff_viewer: Optional[Callable[[], str]] = None,
+) -> PermissionDecision:
+    """Display interactive permission modal and collect user decision."""
+    if isinstance(request, str):
+        risk = classify_risk("Confirmation", request)
+        req = PermissionRequest(
+            action="Confirmation Required",
+            target=request.strip(),
+            risk=risk,
+        )
+    else:
+        req = request
+
+    viewed_diff = False
+
+    while True:
+        card = render_permission_card(req)
+        print(f"\n{card}")
+
+        prompt_label = (
+            f"  {style('Enter selection [1-4] or write feedback', Color.BOLD, Color.BRIGHT_YELLOW)} "
+            f"{style('(default: [1] Proceed)', Color.DIM)}: "
+        )
+
+        try:
+            ans = input(prompt_label).strip()
+        except (KeyboardInterrupt, EOFError):
+            print()
+            return PermissionDecision(approved=False, action="abort", feedback="Cancelled by user (Ctrl+C).", view_diff=viewed_diff)
+
+        # Default or Option 1: Proceed
+        if not ans or ans.lower() in {"1", "y", "yes", "proceed"}:
+            return PermissionDecision(approved=True, action="proceed", view_diff=viewed_diff)
+
+        # Option 2: Inspect full diff / details
+        if ans.lower() in {"2", "v", "view", "diff"}:
+            viewed_diff = True
+            if req.diff:
+                print(f"\n{panel('Full Diff Preview', colorize_diff(req.diff), border_color=Color.BRIGHT_CYAN)}")
+            elif diff_viewer:
+                try:
+                    d = diff_viewer()
+                    print(f"\n{panel('Full Diff Preview', colorize_diff(d) if d else 'No diff detected.', border_color=Color.BRIGHT_CYAN)}")
+                except Exception as e:
+                    print(f"\n{panel('Diff Viewer Error', str(e), border_color=Color.BRIGHT_RED)}")
+            else:
+                details_text = req.details or "No additional diff or details available."
+                print(f"\n{panel('Details', details_text, border_color=Color.BRIGHT_CYAN)}")
+            continue
+
+        # Option 3: Abort / Skip
+        if ans.lower() in {"3", "n", "no", "abort", "skip", "cancel"}:
+            return PermissionDecision(approved=False, action="abort", view_diff=viewed_diff)
+
+        # Option 4: Custom instructions prompt
+        if ans == "4":
+            try:
+                feedback = input(f"  {style('Your instructions / feedback', Color.BOLD, Color.BRIGHT_MAGENTA)}: ").strip()
+            except (KeyboardInterrupt, EOFError):
+                print()
+                return PermissionDecision(approved=False, action="abort", feedback="Feedback entry cancelled.", view_diff=viewed_diff)
+            return PermissionDecision(
+                approved=False,
+                action="feedback",
+                feedback=feedback or "User requested alternative approach.",
+                view_diff=viewed_diff,
+            )
+
+        # Any custom response typed directly
+        return PermissionDecision(approved=False, action="feedback", feedback=ans, view_diff=viewed_diff)
+

@@ -5,7 +5,7 @@ import time
 from typing import Any, Dict, List
 
 from .providers import make_provider, ProviderError
-from .ui import badge, panel, style, Color, colorize_diff
+from .ui import badge, panel, style, Color, colorize_diff, PermissionRequest, RiskLevel
 from .context import optimize_conversation, TokenTracker, estimate_messages_tokens
 
 
@@ -380,20 +380,22 @@ Do not make a speculative large rewrite.
                 print(f"\n{panel('Iteration Summary', result, border_color=Color.BRIGHT_GREEN)}")
 
                 if not autonomous or not self.config.auto_approve_checkpoints:
-                    ans = input(
-                        f"\n{style('Checkpoint', Color.BOLD, Color.BRIGHT_YELLOW)}: continue to next improvement? "
-                        f"[{style('Y', Color.BOLD)}/n/v=view diff/r=revert] "
-                    ).strip().lower()
-
-                    if ans in {"n", "no", "stop", "q"}:
+                    diff_text = self.toolbox.git_diff()
+                    req = PermissionRequest(
+                        action="Engineering Checkpoint",
+                        target=f"Iteration {i}/{max_iter}",
+                        risk=RiskLevel.LOW,
+                        details=f"Goal: {goal}\nReview changes and choose whether to proceed with next improvement.",
+                        diff=diff_text,
+                    )
+                    decision = self.toolbox.ask_permission(req, diff_viewer=self.toolbox.git_diff)
+                    if not decision.approved:
+                        if decision.action == "feedback" and decision.feedback:
+                            print(f"\n{badge('FEEDBACK', 'magenta')} {style('Received guidance for next iteration:', Color.BOLD)} {decision.feedback}")
+                            goal = f"{goal} (User guidance: {decision.feedback})"
+                            continue
+                        print(f"\n{badge('STOP', 'info')} Engineering loop stopped by user.")
                         break
-
-                    if ans == "v":
-                        diff = self.toolbox.git_diff()
-                        print(f"\n{panel('Git Diff', colorize_diff(diff))}")
-                        ans = input("Continue? [Y/n] ").strip().lower()
-                        if ans in {"n", "no"}:
-                            break
 
             print(f"\n{badge('STOP', 'info')} Engineering loop completed.")
         except KeyboardInterrupt:

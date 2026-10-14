@@ -11,10 +11,18 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Union, Optional, Callable
 
 from .memory import Memory
 from .context import compress_text
-from .ui import prompt_clarification
+from .ui import (
+    prompt_clarification,
+    prompt_permission,
+    PermissionRequest,
+    PermissionDecision,
+    RiskLevel,
+    classify_risk,
+)
 
 
 TEXT_EXTS = {
@@ -107,15 +115,35 @@ def safe_path(root: Path, rel: str, allow_env_example: bool = True) -> Path:
 
 
 class ToolBox:
-    def __init__(self, config, approve, clarify=None):
+    def __init__(self, config, approve=None, clarify=None):
         self.root = config.root.resolve()
         self.cfg = config
-        self.approve = approve
+        self.approve = approve or prompt_permission
         self.clarify = clarify or prompt_clarification
         self.memory = Memory(config)
 
         self.cfg.devmate_dir.mkdir(exist_ok=True)
         (self.cfg.devmate_dir / "backups").mkdir(exist_ok=True)
+
+    def ask_permission(
+        self,
+        req: Union[PermissionRequest, str],
+        diff_viewer: Optional[Callable] = None,
+    ) -> PermissionDecision:
+        """Request permission using either the configured callback or prompt_permission."""
+        if not self.approve:
+            return PermissionDecision(approved=True, action="proceed")
+
+        try:
+            res = self.approve(req)
+        except TypeError:
+            res = self.approve(str(req))
+
+        if isinstance(res, PermissionDecision):
+            return res
+        if isinstance(res, bool):
+            return PermissionDecision(approved=res, action="proceed" if res else "abort")
+        return PermissionDecision(approved=bool(res), action="proceed" if res else "abort")
 
     def _backup(self, p: Path):
         """Create a timestamped backup before modifying or deleting a file."""
@@ -264,7 +292,14 @@ class ToolBox:
         p = safe_path(self.root, path, allow_env_example=False)
 
         if not self.cfg.allow_delete:
-            if not self.approve(f"Delete {path}? [y/N] "):
+            req = PermissionRequest(
+                action="Delete File",
+                target=path,
+                risk=RiskLevel.HIGH,
+                details=f"Permanently remove file '{path}'. A backup will be stored in .devmate/backups/.",
+            )
+            decision = self.ask_permission(req)
+            if not decision:
                 return "Deletion cancelled by user."
 
         if p.is_file():
@@ -280,10 +315,24 @@ class ToolBox:
         is_high_risk = any(re.search(pat, command, re.IGNORECASE) for pat in DANGEROUS_COMMAND_PATTERNS)
 
         if is_high_risk:
-            if not self.approve(f"\n⚠️  [HIGH RISK] Destructive command detected:\n  {command}\nExecute? [y/N] "):
+            req = PermissionRequest(
+                action="Destructive Shell Command",
+                target=command,
+                risk=RiskLevel.HIGH,
+                details="Potentially destructive command pattern detected.",
+            )
+            decision = self.ask_permission(req)
+            if not decision:
                 return "Command execution blocked by security policy."
         elif not self.cfg.allow_commands:
-            if not self.approve(f"Run command?\n  {command}\n[y/N] "):
+            req = PermissionRequest(
+                action="Execute Shell Command",
+                target=command,
+                risk=RiskLevel.MEDIUM,
+                details="Shell command execution in workspace.",
+            )
+            decision = self.ask_permission(req)
+            if not decision:
                 return "Command cancelled by user."
 
         try:
@@ -341,7 +390,14 @@ class ToolBox:
         rel_str = str(p.relative_to(self.root))
 
         if not self.cfg.allow_commands:
-            if not self.approve(f"Run Python script?\n  {rel_str}\n[y/N] "):
+            req = PermissionRequest(
+                action="Run Python Script",
+                target=rel_str,
+                risk=RiskLevel.MEDIUM,
+                details=f"Executing Python script via sys.executable ({Path(sys.executable).name}).",
+            )
+            decision = self.ask_permission(req)
+            if not decision:
                 return "Execution cancelled by user."
 
         try:

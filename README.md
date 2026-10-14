@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.11+" />
   <img src="https://img.shields.io/badge/Security-Hardened-059669?style=for-the-badge&logo=shield&logoColor=white" alt="Security Hardened" />
-  <img src="https://img.shields.io/badge/Tests-44%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests Passed" />
+  <img src="https://img.shields.io/badge/Tests-68%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests Passed" />
   <img src="https://img.shields.io/badge/Multi--Agent-Swarm%20%26%20Delegation-EC4899?style=for-the-badge&logo=probot&logoColor=white" alt="Multi-Agent Swarm" />
   <img src="https://img.shields.io/badge/Context-Antigravity%20Compacted-8B5CF6?style=for-the-badge&logo=fastapi&logoColor=white" alt="Context Optimizer" />
   <img src="https://img.shields.io/badge/Providers-Google%20Gemini%20%2B%20OpenRouter-6366F1?style=for-the-badge&logo=google&logoColor=white" alt="Providers" />
@@ -45,6 +45,11 @@ A lightweight, security-first, multi-provider **AI Software Engineering Agent** 
   - ⚡ Shell-safe Python execution (`shell=False` under `sys.executable` eliminates command injection).
   - 🪟 Windows UTF-8 encoding safety (prevents `UnicodeDecodeError` in subprocesses).
 - **Systematic Engineering Loop**: Inspect &rarr; Plan &rarr; Edit &rarr; Execute &rarr; Diagnose &rarr; Verify &rarr; Checkpoint.
+- **Antigravity-Style Interactive Permission Modals (Day 2)**:
+  - 🛡️ **Interactive Permission Cards (`prompt_permission`)**: Rich modal cards displaying action, target, details, and risk tier badges (`🟢 LOW RISK`, `🟡 MEDIUM RISK`, `🔴 HIGH RISK`).
+  - 🎛️ **Action Options**: Single-key or menu selection for `[1] Proceed with change`, `[2] Inspect full diff / details`, `[3] Abort / Skip`, and `[4] Provide feedback / custom instructions`.
+  - 🔍 **Integrated Diff Inspection**: Expand and inspect colorized unified diff previews before granting mutation permission.
+  - 🧭 **Human-in-the-Loop Steering**: Pass custom feedback or instructions directly at engineering checkpoints to dynamically steer subsequent iterations.
 - **Human-in-the-Loop Guardrails**: Dangerous commands, deletions, and checkpoints pause for explicit approval.
 - **Automatic Backups**: Pre-edit and pre-deletion snapshots automatically stored in `.devmate/backups/`.
 - **Persistent Project Memory**: Structured memory store (`memory.json`) and audit activity tracking (`activity.jsonl`).
@@ -191,7 +196,11 @@ Run the comprehensive test suite:
 pytest -v
 ```
 
-All 44 test cases verify:
+All 68 test cases verify:
+- Interactive permission & approval modal protocol (`prompt_permission`, `render_permission_card`)
+- Risk tier classification (`🟢 LOW`, `🟡 MEDIUM`, `🔴 HIGH`)
+- Single-key approval, abort, and diff inspection workflows
+- Interactive feedback and human-in-the-loop iteration steering
 - Interactive clarification protocol & anti-hallucination guardrails (`ask_clarification`)
 - Grounding and project identity preservation
 - Multi-agent swarm orchestration & dual-provider deliberation (Gemini + OpenRouter)
