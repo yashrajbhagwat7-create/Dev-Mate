@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.11+" />
   <img src="https://img.shields.io/badge/Security-Hardened-059669?style=for-the-badge&logo=shield&logoColor=white" alt="Security Hardened" />
-  <img src="https://img.shields.io/badge/Tests-68%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests Passed" />
+  <img src="https://img.shields.io/badge/Tests-92%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests Passed" />
   <img src="https://img.shields.io/badge/Multi--Agent-Swarm%20%26%20Delegation-EC4899?style=for-the-badge&logo=probot&logoColor=white" alt="Multi-Agent Swarm" />
   <img src="https://img.shields.io/badge/Context-Antigravity%20Compacted-8B5CF6?style=for-the-badge&logo=fastapi&logoColor=white" alt="Context Optimizer" />
   <img src="https://img.shields.io/badge/Providers-Google%20Gemini%20%2B%20OpenRouter-6366F1?style=for-the-badge&logo=google&logoColor=white" alt="Providers" />
@@ -17,6 +17,11 @@ A lightweight, security-first, multi-provider **AI Software Engineering Agent** 
 
 ## 🚀 Key Capabilities
 
+- **Document & Report Quality Linter (Day 3)**:
+  - 🎨 **Unified Design Tokens & Color Palettes**: Institutional themes (Academic Navy `#0B192C`, Emerald Tech, Crimson Executive, Slate Minimal) with WCAG AA & AAA contrast validation.
+  - 📊 **Table & Cell Validator**: Detects and automatically repairs mismatched column spans, blank/phantom rows, missing header separators, and unaligned cells in Markdown and HTML.
+  - 🔍 **Document Quality Scoring Engine (`lint_document`)**: Grades files (0–100 quality score) and flags typography hierarchy skips (e.g. H1 &rarr; H3 jumps), placeholder leaks (`[TODO]`, `[TBD]`, `Lorem ipsum`), and broken link/media targets.
+  - 🛠️ **CLI Integration (`/lint <path> [--fix]`)**: On-demand document linting and automated auto-fix with timestamped backups.
 - **Multi-Agent Swarm & Side-by-Side Dual-Model Delegation**:
   - 🤝 **Dual-Model Collaboration (`/team <goal>`)**: Runs Google Gemini and OpenRouter side-by-side in a 3-phase deliberation pipeline (Lead drafts proposal &rarr; Peer stress-tests & critiques &rarr; Lead synthesizes finalized consensus plan).
   - 🧐 **Cross-Model Peer Review (`/review [file/diff]`)**: Automatically delegates an adversarial code and security review of any file or git diff to the alternate model.
@@ -177,6 +182,7 @@ Inside the interactive `devmate ❯` prompt:
 | `/paste` | Enter multi-line paste mode (paste massive text, type `:end` to submit) |
 | `/editor` | Open external editor (Notepad/nano) to write or paste large prompts |
 | `/tokens` | Display session token usage, API calls, and compaction savings |
+| `/lint <path> [--fix]` | Lint document/report for tables, styles, & placeholders (with auto-fix) |
 | `/provider <name>` | Switch model provider (`openrouter` \| `google`) |
 | `/mode <name>` | Switch active mode (`ask` \| `edit` \| `engineer` \| `autonomous`) |
 | `/status` | View git working tree status |
@@ -196,7 +202,13 @@ Run the comprehensive test suite:
 pytest -v
 ```
 
-All 68 test cases verify:
+All 92 test cases verify:
+- Document & Report Quality Linter & table auto-repair (`devmate/design.py`, `lint_document`)
+- Color token contrast calculation & WCAG AA / AAA compliance
+- Institutional color themes (`Academic Navy`, `Emerald Tech`, `Crimson Executive`, `Slate Minimal`)
+- Typography scale hierarchy validation & heading skip detection
+- Markdown & HTML table parsing, column balance, blank row detection, and auto-alignment
+- Unresolved placeholder and hallucination leak detection (`[TODO]`, `[TBD]`, `Lorem ipsum`)
 - Interactive permission & approval modal protocol (`prompt_permission`, `render_permission_card`)
 - Risk tier classification (`🟢 LOW`, `🟡 MEDIUM`, `🔴 HIGH`)
 - Single-key approval, abort, and diff inspection workflows

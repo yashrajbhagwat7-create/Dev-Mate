@@ -149,7 +149,9 @@ class ToolBox:
         """Create a timestamped backup before modifying or deleting a file."""
         if p.exists() and p.is_file():
             stamp = time.strftime("%Y%m%d-%H%M%S")
-            dst = self.cfg.devmate_dir / "backups" / f"{stamp}_{p.name}"
+            backup_dir = self.cfg.devmate_dir / "backups"
+            backup_dir.mkdir(parents=True, exist_ok=True)
+            dst = backup_dir / f"{stamp}_{p.name}"
             try:
                 shutil.copy2(p, dst)
             except OSError:
@@ -514,3 +516,58 @@ class ToolBox:
         ans = self.clarify(str(question).strip(), opts)
         self.memory.log("CLARIFY", f"Q: {question[:80]} | A: {str(ans)[:80]}", "PASS")
         return f"User Clarification Response:\n{ans}"
+
+    def lint_document(self, path: str, auto_fix: bool = False) -> str:
+        """Lint a document (markdown, HTML, or report) for table integrity, column alignment, empty rows, design consistency, and placeholder leaks."""
+        from .design import DocumentLinter
+        from .ui import render_lint_report
+
+        p = safe_path(self.root, path, allow_env_example=False)
+        if not p.is_file():
+            raise FileNotFoundError(f"Document not found: {path}")
+
+        linter = DocumentLinter()
+        raw_text = p.read_text(encoding="utf-8", errors="replace")
+
+        if auto_fix:
+            self._backup(p)
+            repaired_text = linter.auto_fix_content(raw_text)
+            p.write_text(repaired_text, encoding="utf-8")
+            report = linter.lint_text(repaired_text, file_path=str(p.relative_to(self.root)))
+            fix_msg = f"Auto-fix applied and saved to {p.relative_to(self.root)}. "
+        else:
+            report = linter.lint_text(raw_text, file_path=str(p.relative_to(self.root)))
+            fix_msg = ""
+
+        # Format visual card
+        card = render_lint_report(report)
+        print(f"\n{card}")
+
+        status = "PASS" if report.is_valid else "FAIL"
+        rel_str = str(p.relative_to(self.root))
+        self.memory.log("LINT", f"{rel_str} (Score: {report.score}/100, Issues: {len(report.issues)})", status)
+
+        return json.dumps(
+            {
+                "status": status,
+                "file": rel_str,
+                "score": report.score,
+                "auto_fix": auto_fix,
+                "message": fix_msg + report.summary,
+                "critical": report.critical_count,
+                "warnings": report.warning_count,
+                "notices": report.info_count,
+                "issues": [
+                    {
+                        "severity": iss.severity.value,
+                        "category": iss.category,
+                        "message": iss.message,
+                        "line": iss.line,
+                        "suggestion": iss.suggestion,
+                    }
+                    for iss in report.issues
+                ]
+            },
+            ensure_ascii=False,
+            indent=2
+        )

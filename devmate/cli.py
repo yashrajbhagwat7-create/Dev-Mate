@@ -25,6 +25,7 @@ def print_help():
     {style('/paste', Color.CYAN):<18} Enter multi-line paste mode (paste huge text, type :end to submit)
     {style('/editor', Color.CYAN):<18} Open external editor (Notepad) to write/paste large prompts
     {style('/tokens', Color.CYAN):<18} View session API token usage & compaction savings
+    {style('/lint <path>', Color.CYAN):<18} Lint document/report for tables, styles & formatting (--fix)
     {style('/status', Color.CYAN):<18} View current git working tree status
     {style('/diff', Color.CYAN):<18} View current git diff with syntax highlighting
     {style('/memory', Color.CYAN):<18} Display structured project memory
@@ -126,6 +127,21 @@ def main():
             ]
             print(f"\n{panel('API Token Optimization Stats', '\n'.join(info), border_color=Color.BRIGHT_GREEN)}")
             continue
+
+        # Document & Report Quality Linter
+        if prompt.startswith("/lint"):
+            parts = prompt.split()
+            if len(parts) < 2:
+                print(f"{badge('WARN', 'warn')} Usage: /lint <path> [--fix]")
+                continue
+            doc_path = parts[1]
+            do_fix = "--fix" in parts[2:] or "-f" in parts[2:]
+            try:
+                box.lint_document(doc_path, auto_fix=do_fix)
+            except Exception as e:
+                print(f"\n{badge('ERROR', 'fail')} {style(str(e), Color.BRIGHT_RED)}")
+            continue
+
 
         # Dual-Agent Swarm Collaboration (Gemini + OpenRouter side-by-side)
         if prompt.startswith("/team") or prompt.startswith("/swarm"):

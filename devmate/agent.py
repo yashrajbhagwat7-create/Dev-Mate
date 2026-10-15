@@ -32,6 +32,9 @@ Strict Grounding and Anti-Hallucination Rules:
 - Creative Drafting vs Fact Assertion: When authoring reports, documentation, or synopses:
   * Only assert empirical numbers or outcomes that have been verified in the project repository or explicitly provided by the user.
   * If empirical data is not yet available, ask the user via `ask_clarification` or use clear explicit placeholders (e.g. '[Specify survey sample size]').
+
+Document & Report Quality Self-Verification:
+- When authoring or modifying documentation, reports, Markdown tables, or HTML documents, run `lint_document` to verify table integrity (no blank rows, balanced columns), typography hierarchy, and zero placeholder leaks before finalizing.
 """
 
 TOOL_SCHEMAS = [
@@ -226,6 +229,27 @@ TOOL_SCHEMAS = [
                     }
                 },
                 "required": ["question"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "lint_document",
+            "description": "Lint a document (markdown, HTML, or report) for table column alignment, blank rows, broken delimiters, typography hierarchy, design consistency, and placeholder leaks.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Path to the document to validate relative to project root."
+                    },
+                    "auto_fix": {
+                        "type": "boolean",
+                        "description": "If true, automatically repairs table formatting, removes empty rows, and normalizes cell alignment in the file."
+                    }
+                },
+                "required": ["path"]
             }
         }
     },

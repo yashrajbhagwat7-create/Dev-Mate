@@ -4,10 +4,22 @@ import os
 import re
 import sys
 from dataclasses import dataclass
-from typing import Optional, List, Union, Callable
+from pathlib import Path
+from typing import Optional, List, Union, Callable, Any
 
 # Detect color support
 _USE_COLOR = sys.stdout.isatty() and os.getenv("NO_COLOR") is None
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 if os.name == "nt":
     # Enable ANSI escape sequences on Windows
@@ -399,4 +411,69 @@ def prompt_permission(
 
         # Any custom response typed directly
         return PermissionDecision(approved=False, action="feedback", feedback=ans, view_diff=viewed_diff)
+
+
+def render_lint_report(report: Any) -> str:
+    """Format a styled document quality report card with scores and highlighted issues."""
+    if hasattr(report, "score"):
+        score = report.score
+        file_path = report.file_path
+        summary = report.summary
+        crit = report.critical_count
+        warn = report.warning_count
+        info = report.info_count
+        issues = report.issues
+    elif isinstance(report, dict):
+        score = report.get("score", 0)
+        file_path = report.get("file_path", "")
+        summary = report.get("summary", "")
+        crit = report.get("critical_count", 0)
+        warn = report.get("warning_count", 0)
+        info = report.get("info_count", 0)
+        issues = report.get("issues", [])
+    else:
+        return str(report)
+
+    if score >= 90:
+        score_style = (Color.BOLD, Color.BRIGHT_GREEN)
+        score_badge = badge(f"SCORE {score}/100", "pass")
+    elif score >= 70:
+        score_style = (Color.BOLD, Color.BRIGHT_YELLOW)
+        score_badge = badge(f"SCORE {score}/100", "warn")
+    else:
+        score_style = (Color.BOLD, Color.BRIGHT_RED)
+        score_badge = badge(f"SCORE {score}/100", "fail")
+
+    lines = [
+        f"{style('Target:', Color.BOLD, Color.WHITE)} {style(file_path, Color.CYAN)}",
+        f"{style('Rating:', Color.BOLD, Color.WHITE)} {score_badge} - {style(summary, *score_style)}",
+        f"{style('Issues:', Color.BOLD, Color.WHITE)} {badge(str(crit), 'fail')} Critical  {badge(str(warn), 'warn')} Warnings  {badge(str(info), 'info')} Notices",
+    ]
+
+    if not issues:
+        lines.append("")
+        lines.append(f"  {style('[OK] All design, typography, and table integrity checks passed.', Color.BRIGHT_GREEN)}")
+    else:
+        lines.append("")
+        lines.append(style("Findings & Recommendations:", Color.BOLD, Color.UNDERLINE))
+        for iss in issues[:15]:
+            sev = getattr(iss, "severity", None)
+            sev_str = sev.value if hasattr(sev, "value") else str(iss.get("severity", ""))
+            line_no = getattr(iss, "line", 0) or (iss.get("line") if isinstance(iss, dict) else 0)
+            cat = getattr(iss, "category", "") or (iss.get("category", "") if isinstance(iss, dict) else "")
+            msg = getattr(iss, "message", "") or (iss.get("message", "") if isinstance(iss, dict) else "")
+            sug = getattr(iss, "suggestion", "") or (iss.get("suggestion", "") if isinstance(iss, dict) else "")
+
+            sev_badge = badge(sev_str, "fail" if sev_str == "CRITICAL" else ("warn" if sev_str == "WARNING" else "info"))
+            loc = f"Line {line_no}: " if line_no > 0 else ""
+            lines.append(f"  {sev_badge} {style(loc, Color.DIM)}{style(cat, Color.BOLD)}: {msg}")
+            if sug:
+                lines.append(f"    {style('-> Fix:', Color.DIM, Color.BRIGHT_CYAN)} {style(sug, Color.DIM)}")
+
+        if len(issues) > 15:
+            lines.append(f"  ... [and {len(issues) - 15} more issues]")
+
+    display_name = Path(file_path).name if file_path else "Report"
+    return panel(f"Document Quality Linter: {display_name}", "\n".join(lines), border_color=Color.BRIGHT_MAGENTA)
+
 
