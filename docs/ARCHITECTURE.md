@@ -298,6 +298,18 @@ Autonomous verification loop enabling the agent to test and self-heal:
 - **Smart Diagnostic Feedback**: When a tool throws an error (e.g. `FileNotFoundError`, `ValueError` in `edit_file`, or `SyntaxError`), the agent automatically receives recovery hints suggesting `list_files`, indentation verification via `read_file`, or deterministic `replace_lines`.
 - **Atomic Undo & Rollback**: Microsecond-indexed snapshots in `.devmate/backups/` and manifest tracking allow immediate reversal via `rollback_file` and `undo_last_change`.
 
+### 4.12 Interactive Setup Wizard (`devmate/wizard.py`)
+Frictionless first-time user onboarding:
+- Configures Google Gemini, OpenRouter, or 100% free offline Ollama in under 30 seconds.
+- Performs live API connectivity verification before writing settings into `.env`.
+- Invoked via `devmate --init`, slash command `/init`, or automatically when running without configured keys.
+
+### 4.13 Zero-Dependency Local Web Dashboard (`devmate/web.py`)
+Built-in local browser interface running on Python's native `http.server`:
+- Serves the luxury dark control dashboard at `http://127.0.0.1:8080`.
+- Provides full REST API endpoints (`/api/doctor`, `/api/tests`, `/api/diff`, `/api/status`, `/api/deps`, `/api/chat`).
+- Launchable from the CLI via `devmate --web [port]` or the interactive `/web` slash command.
+
 ---
 
 ## 5. Directory Layout & Architecture Organization
@@ -321,31 +333,39 @@ devmate/
 │   ├── design.py                   # Document quality linter & WCAG color engine
 │   ├── memory.py                   # Structured memory & activity logger
 │   ├── providers.py                # Google Gemini & OpenRouter adapters
-│   ├── reader.py                   # Input reader with @file & multi-line paste
+│   ├── reader.py                   # Input reader with autocomplete, history & @file
 │   ├── subagent.py                 # MultiAgentSwarm & role-isolated subagents
 │   ├── tools.py                    # Security-guarded tool implementation
-│   └── ui.py                       # Modern terminal UI & permission modal cards
+│   ├── ui.py                       # Modern terminal UI & permission modal cards
+│   ├── web.py                      # Built-in local web dashboard & REST API server
+│   └── wizard.py                   # Interactive provider setup wizard (30s onboarding)
 ├── docs/                           # Architecture, Specifications & Guides
 │   ├── ARCHITECTURE.md             # This comprehensive architecture document
 │   └── data_structures_guide.md    # Reference guide for core project data structures
 ├── examples/                       # Web & Visualization Demonstrations
 │   ├── contact.html                # Dark luxury contact interface demo
+│   ├── dashboard.html              # Live luxury control dashboard & web GUI
 │   ├── portfolio.html              # Interactive dark luxury portfolio demo
 │   └── tree-ds.html                # Tree data structure visualizer
 ├── scripts/                        # Utility & Generation Scripts
 │   ├── generate_ds_pdf.py          # Data structures PDF generator
 │   └── generate_simple_pdf.py      # Simple PDF builder script
-├── tests/                          # Automated Pytest Suite (92 Unit Tests)
+├── tests/                          # Automated Pytest Suite (140 Unit Tests)
+│   ├── test_agent.py               # ReAct loop, tool dispatch & autonomous iteration tests
 │   ├── test_clarification.py       # Clarification modal & anti-hallucination tests
+│   ├── test_cli.py                 # Slash commands, one-shot prompt, fuzzy match & flags
 │   ├── test_config.py              # Configuration & provider factory tests
 │   ├── test_context.py             # Token compaction & text compression tests
 │   ├── test_design.py              # WCAG contrast, typography & table linter tests
 │   ├── test_memory.py              # Memory persistence & activity log tests
 │   ├── test_permission.py          # Interactive permission modals & risk tiers
-│   ├── test_reader.py              # Input parsing & inline @file expansion tests
+│   ├── test_reader.py              # Autocompleter, @file expansion & file ingestion tests
+│   ├── test_resilience.py          # HTTP 429/5xx retry backoff & custom endpoint tests
 │   ├── test_security.py            # Path traversal, secret leak & device name tests
 │   ├── test_subagent.py            # Swarm collaboration & subagent role isolation
-│   └── test_tools.py               # Safe file & command execution tests
+│   ├── test_tools.py               # AST outline, definition, refs, deps, syntax & test runner
+│   ├── test_web.py                 # Built-in web dashboard HTTP & REST API tests
+│   └── test_wizard.py              # Interactive setup wizard & key verification tests
 ├── .env.example                    # Environment template with safety controls
 ├── .gitignore                      # Hardened git ignore rules
 ├── pyproject.toml                  # PEP 621 packaging metadata
@@ -390,7 +410,7 @@ devmate/
 
 ## 7. Testing & Verification Architecture
 
-Dev-Mate's test suite covers 13 distinct testing domains spanning **128 tests with ~80% statement coverage**:
+Dev-Mate's test suite covers 15 distinct testing domains spanning **140 tests with ~80% statement coverage**:
 
 1. **Clarification Protocol (`test_clarification.py`)**: Tests modal card formatting, indexed selection, custom answers, and anti-hallucination system prompt rules.
 2. **Configuration & Providers (`test_config.py`)**: Tests boolean environment flag parsing, provider factory dispatch, Ollama local configuration, and missing key exceptions.
@@ -398,13 +418,15 @@ Dev-Mate's test suite covers 13 distinct testing domains spanning **128 tests wi
 4. **Design & Document Quality (`test_design.py`)**: Tests relative luminance, WCAG AA/AAA contrast calculations, typography scale hierarchies, table column alignment, blank row elimination, and placeholder leak detection.
 5. **Memory & Audit (`test_memory.py`)**: Tests JSON memory persistence, mistake recording and deduplication, structured markdown export (`export_summary`), and activity log bounds.
 6. **Permission Protocol (`test_permission.py`)**: Tests risk tier classification, modal card rendering, single-key approval (`[1]`), diff inspection (`[2]`), abort (`[3]`), and dynamic feedback injection (`[4]`).
-7. **Reader & Input (`test_reader.py`)**: Tests multi-line bracketed paste, `@file` inline expansion, file ingestion, and prompt formatting.
+7. **Reader & Input (`test_reader.py`)**: Tests multi-line bracketed paste, interactive tab autocomplete (`DevMateCompleter`), `@file` inline expansion, file ingestion, and prompt formatting.
 8. **Security Hardening (`test_security.py`)**: Tests path traversal rejections (`../`), Windows reserved device blocking (`CON`, `NUL`), secret protection (`.env`, `id_rsa`), and script validation.
 9. **Subagent & Swarm (`test_subagent.py`)**: Tests role tool isolation (`researcher` read-only constraint), peer provider automatic selection, and execution bounds.
 10. **Tool Execution & Code Intelligence (`test_tools.py`)**: Tests safe reading, binary file guard, writing with backups, CRLF normalization, `replace_lines`, AST `view_outline`, AST `get_definition`, AST `find_references`, AST `analyze_dependencies`, `check_syntax`, `run_tests`, `export_audit_log`, `rollback_file`, and `undo_last_change`.
 11. **Agent ReAct Loop (`test_agent.py`)**: Tests autonomous iterations, tool call execution, unknown tool fallbacks, and direct text responses.
-12. **Interactive CLI & Flags (`test_cli.py`)**: Tests terminal slash command execution loop (`/help`, `/doctor`, `/test`, `/syntax`, `/refs`, `/deps`, `/audit`, `/clear`, `/tokens`, `/report`, `/status`, `/diff`, `/memory`, `/history`, `/outline`, `/undo`, `/exit`), `--doctor` flag, and `--test` flag.
+12. **Interactive CLI & Flags (`test_cli.py`)**: Tests terminal slash command execution loop (`/help`, `/doctor`, `/test`, `/syntax`, `/refs`, `/deps`, `/audit`, `/web`, `/init`, `/clear`, `/tokens`, `/report`, `/status`, `/diff`, `/memory`, `/history`, `/outline`, `/undo`, `/exit`), `--doctor` flag, `--test` flag, `--init` flag, `--web` flag, one-shot prompt execution, and fuzzy slash command suggestion ("Did you mean...?").
 13. **Network Resilience & Backoff (`test_resilience.py`)**: Tests exponential retry backoff on HTTP 429 rate limits and 5xx server errors, and custom base URL endpoints.
+14. **Built-in Web Dashboard (`test_web.py`)**: Tests native HTTP server, HTML dashboard serving, and REST endpoints (`/api/doctor`, `/api/tests`, `/api/status`, `/api/diff`, `/api/deps`, `/api/chat`, `/api/syntax`, `/api/undo`).
+15. **Interactive Setup Wizard (`test_wizard.py`)**: Tests key verification across Gemini and OpenRouter, local Ollama connectivity probing, `.env` file generation, and interactive onboarding flows.
 
 To run the entire test suite:
 ```powershell

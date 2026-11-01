@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.11+" />
   <img src="https://img.shields.io/badge/Security-Hardened-059669?style=for-the-badge&logo=shield&logoColor=white" alt="Security Hardened" />
-  <img src="https://img.shields.io/badge/Tests-128%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests Passed" />
+  <img src="https://img.shields.io/badge/Tests-140%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests Passed" />
   <img src="https://img.shields.io/badge/Multi--Agent-Swarm%20%26%20Delegation-EC4899?style=for-the-badge&logo=probot&logoColor=white" alt="Multi-Agent Swarm" />
   <img src="https://img.shields.io/badge/Context-Antigravity%20Compacted-8B5CF6?style=for-the-badge&logo=fastapi&logoColor=white" alt="Context Optimizer" />
   <img src="https://img.shields.io/badge/Providers-Gemini%20%2B%20OpenRouter%20%2B%20Ollama-6366F1?style=for-the-badge&logo=google&logoColor=white" alt="Providers" />
@@ -37,6 +37,12 @@ A lightweight, security-first, multi-provider **AI Software Engineering Agent** 
   - 🧠 **Dynamic Context Window Budgeting**: Automatically compacts conversation history before exceeding token quotas (`MAX_CONTEXT_TOKENS`).
   - 📦 **Lean System Overview**: High-level tree and extension stats replace raw file lists in the system prompt.
   - ✂️ **Intelligent Output Truncation**: Bounded file reading, top search hits, and head/tail command output compression.
+- **User Experience & Interactive Workflow**:
+  - 🪄 **Interactive Setup Wizard (`devmate --init` / `/init`)**: 30-second onboarding configuring Google Gemini, OpenRouter, or 100% free local Ollama with live API verification.
+  - 🌐 **Built-in Local Web Dashboard (`devmate --web` / `/web`)**: Zero-dependency browser interface with live health monitor, interactive test runner, git diff viewer, and real-time chat.
+  - ⌨️ **Tab Autocompletion & Command History**: Interactive autocomplete for all slash commands and `@file` paths, with persistent cross-session history in `.devmate/history_cli.txt`.
+  - 🎯 **One-Shot Execution**: Run quick prompts non-interactively via `devmate "prompt"` or `devmate -p "prompt"`.
+  - 💡 **Fuzzy Slash Command Suggestions**: Intelligent "Did you mean...?" suggestions for mistyped commands.
 - **Advanced CLI Input Window**:
   - 📋 **Bracketed Paste**: Paste massive paragraphs, stack traces, and multi-page code blocks without line-by-line triggers.
   - 📄 **File Ingestion (`/file <path>`)**: Feed entire files directly into your prompt.
@@ -185,6 +191,8 @@ Inside the interactive `devmate ❯` prompt:
 | `/refs <sym> [p]`| Locate all AST references, usages, and call sites of a symbol across project |
 | `/deps [path]` | Analyze module import graph, third-party packages, and detect circular dependencies |
 | `/audit [path]` | Export full session activity and backup history to formatted markdown audit report |
+| `/web [port]` | Launch local web dashboard server (default: 8080) |
+| `/init` | Launch interactive onboarding setup wizard |
 | `/outline <path>` | Inspect high-level file structural outline (classes, methods, docstrings via AST) |
 | `/undo` | Revert the most recent file mutation from timestamped backup |
 | `/rollback <path>` | Restore a specific file from its latest backup snapshot |

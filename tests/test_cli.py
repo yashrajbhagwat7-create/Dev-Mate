@@ -103,3 +103,44 @@ def test_cli_extended_slash_commands(tmp_path, monkeypatch, capsys):
     assert "All tests passed" in captured.out
     assert "Goodbye!" in captured.out
 
+
+def test_cli_one_shot_execution(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    with patch("sys.argv", ["devmate", "--root", str(tmp_path), "-p", "explain this"]), \
+         patch("devmate.agent.Agent.run", return_value="One-shot response text"):
+        main()
+
+    captured = capsys.readouterr()
+    assert "One-shot response text" in captured.out
+
+
+def test_cli_init_and_web_flags(tmp_path):
+    # Test --init calls run_setup_wizard
+    with patch("sys.argv", ["devmate", "--root", str(tmp_path), "--init"]), \
+         patch("devmate.wizard.run_setup_wizard") as mock_wiz:
+        main()
+        mock_wiz.assert_called_once()
+
+    # Test --web calls start_web_server
+    with patch("sys.argv", ["devmate", "--root", str(tmp_path), "--web", "9090"]), \
+         patch("devmate.web.start_web_server") as mock_web:
+        main()
+        mock_web.assert_called_once()
+
+
+def test_cli_fuzzy_command_suggestion(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    prompt_sequence = [
+        "/doctr",
+        "/stts",
+        "/exit"
+    ]
+
+    with patch("devmate.cli.InputReader.read_prompt", side_effect=prompt_sequence), \
+         patch("sys.argv", ["devmate", "--root", str(tmp_path)]):
+        main()
+
+    captured = capsys.readouterr()
+    assert "Did you mean" in captured.out
+    assert "/doctor" in captured.out or "/status" in captured.out
+

@@ -49,6 +49,8 @@ def print_help():
     {style('/deps [path]', Color.CYAN):<18} Analyze package dependencies & detect circular import cycles
     {style('/test [target]', Color.CYAN):<18} Execute test suite and display structured diagnostic results
     {style('/audit [path]', Color.CYAN):<18} Export full session audit & compliance ledger to markdown
+    {style('/web [port]', Color.CYAN):<18} Launch luxury local web dashboard server (default: 8080)
+    {style('/init', Color.CYAN):<18} Launch interactive provider onboarding setup wizard
     {style('/clear', Color.CYAN):<18} Clear terminal screen buffer
     {style('/help', Color.CYAN):<18} Show this command reference
     {style('/exit', Color.CYAN):<18} Exit Dev-Mate session
@@ -64,11 +66,16 @@ def print_help():
 def main():
     parser = argparse.ArgumentParser(prog="devmate", description="Dev-Mate AI Software Engineering Agent")
 
+    parser.add_argument("prompt", nargs="*", help="Optional one-shot prompt to execute non-interactively")
+    parser.add_argument("-p", "--prompt-text", help="One-shot prompt to run non-interactively and exit")
     parser.add_argument("--root", default=".", help="Project workspace root directory")
     parser.add_argument("--provider", choices=["openrouter", "google", "ollama"], help="AI Model provider")
     parser.add_argument("--mode", choices=["ask", "edit", "engineer", "autonomous", "plan"], help="Operation mode")
     parser.add_argument("--doctor", action="store_true", help="Run workspace and provider health check and exit")
     parser.add_argument("--test", action="store_true", help="Run project test suite and exit")
+    parser.add_argument("--init", action="store_true", help="Launch interactive first-time setup wizard")
+    parser.add_argument("--web", nargs="?", const=8080, type=int, help="Launch local web UI dashboard server (default port 8080)")
+    parser.add_argument("-v", "--version", action="version", version="Dev-Mate v0.1.0")
 
     args = parser.parse_args()
 
@@ -83,11 +90,19 @@ def main():
 
     box = ToolBox(cfg, approve=prompt_permission, clarify=prompt_clarification)
 
+    # 1. Wizard Flag
+    if args.init:
+        from .wizard import run_setup_wizard
+        run_setup_wizard(root)
+        return
+
+    # 2. Doctor Flag
     if args.doctor:
         health = box.run_doctor()
         print(f"\n{render_doctor_card(health)}\n")
         return
 
+    # 3. Test Runner Flag
     if args.test:
         test_out = box.run_tests()
         try:
@@ -103,14 +118,47 @@ def main():
         except Exception:
             print(test_out)
             sys.exit(0)
-    agent = Agent(cfg, box)
-    swarm = MultiAgentSwarm(cfg, box)
+
+    # Attempt to initialize agent & swarm safely
+    agent = None
+    swarm = None
+    agent_error = None
+    try:
+        agent = Agent(cfg, box)
+        swarm = MultiAgentSwarm(cfg, box)
+    except Exception as e:
+        agent_error = str(e)
+
+    # 4. Web Dashboard Flag
+    if args.web is not None:
+        from .web import start_web_server
+        port = args.web if isinstance(args.web, int) and args.web > 0 else 8080
+        start_web_server(cfg, box, agent=agent, port=port)
+        return
+
+    # 5. One-Shot Execution Flag
+    one_shot = args.prompt_text or (" ".join(args.prompt).strip() if args.prompt else None)
+    if one_shot:
+        if not agent:
+            print(f"\n{badge('ERROR', 'fail')} {agent_error}")
+            print(f"  Run {style('devmate --init', Color.BRIGHT_CYAN)} to configure your AI provider in under 30 seconds.\n")
+            sys.exit(1)
+        resp = agent.run(one_shot, cfg.mode)
+        if resp:
+            print(f"\n{resp}\n")
+        return
+
     reader = InputReader(root)
 
     current_model = cfg.google_model if cfg.provider in {"google", "gemini"} else cfg.openrouter_model
     print(banner(str(root), cfg.provider, cfg.mode, current_model))
     print(f"  Type {style('/help', Color.CYAN)} for commands, {style('/team', Color.CYAN)} for Gemini+OpenRouter collaboration.")
     print(f"  {style('Multi-line paste supported directly', Color.DIM)} (or use {style('/file', Color.DIM)}, {style('/paste', Color.DIM)}, {style('/editor', Color.DIM)}).\n")
+
+    if agent is None:
+        print(f"  {badge('SETUP', 'warn')} No active AI provider key detected ({agent_error}).")
+        print(f"  Type {style('/init', Color.BRIGHT_CYAN)} to configure Gemini, OpenRouter, or free local Ollama.")
+        print(f"  {style('Diagnostic tools (/doctor, /test, /syntax, /refs, /deps, /diff, /status, /web) are fully active.', Color.DIM)}\n")
 
     while True:
         try:
@@ -377,6 +425,29 @@ def main():
             os.system("cls" if os.name == "nt" else "clear")
             continue
 
+        # Local Web Dashboard Server
+        if prompt.startswith("/web"):
+            from .web import start_web_server
+            parts = prompt.split()
+            port = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 8080
+            start_web_server(cfg, box, agent=agent, port=port)
+            continue
+
+        # Interactive setup wizard
+        if prompt in {"/init", "/setup", ":init"}:
+            from .wizard import run_setup_wizard
+            if run_setup_wizard(root):
+                cfg = Config(root=root)
+                try:
+                    agent = Agent(cfg, box)
+                    swarm = MultiAgentSwarm(cfg, box)
+                    agent_error = None
+                    print(f"\n{badge('PASS', 'pass')} Provider reloaded: {cfg.provider}")
+                except Exception as e:
+                    agent_error = str(e)
+                    print(f"\n{badge('WARN', 'warn')} {e}")
+            continue
+
         # Provider switch
         if prompt.startswith("/provider"):
             parts = prompt.split(None, 1)
@@ -467,6 +538,25 @@ def main():
 
             history_text = "\n".join(lines)
             print(f"\n{panel('Recent Activity Log', history_text, border_color=Color.BRIGHT_BLUE)}")
+            continue
+
+        # Catch-all for unrecognized slash commands with intelligent fuzzy suggestions
+        if prompt.startswith("/") and not prompt.startswith("//"):
+            import difflib
+            from .reader import COMMAND_DESCRIPTIONS
+            cmd_name = prompt.split()[0]
+            matches = difflib.get_close_matches(cmd_name, list(COMMAND_DESCRIPTIONS.keys()), n=2, cutoff=0.5)
+            if matches:
+                print(f"\n{badge('WARN', 'warn')} Unknown command '{cmd_name}'. Did you mean {style(matches[0], Color.BOLD, Color.BRIGHT_CYAN)}?")
+            else:
+                print(f"\n{badge('WARN', 'warn')} Unknown command '{cmd_name}'. Type {style('/help', Color.CYAN)} for available commands.")
+            continue
+
+        # Guard: check if AI provider is configured before attempting generation
+        if agent is None:
+            print(f"\n{badge('SETUP', 'warn')} No active AI provider key configured ({agent_error}).")
+            print(f"  Type {style('/init', Color.BRIGHT_CYAN)} to configure Gemini, OpenRouter, or free local Ollama.")
+            print(f"  Or use offline commands: {style('/doctor', Color.CYAN)}, {style('/test', Color.CYAN)}, {style('/syntax', Color.CYAN)}, {style('/refs', Color.CYAN)}, {style('/web', Color.CYAN)}\n")
             continue
 
         try:

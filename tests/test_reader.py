@@ -44,3 +44,21 @@ def test_process_special_syntax_no_files(reader_workspace):
     _, reader = reader_workspace
     prompt = "Hello world without any file references"
     assert reader.process_special_syntax(prompt) == prompt
+
+
+def test_reader_completer(reader_workspace):
+    tmp_path, reader = reader_workspace
+    from prompt_toolkit.document import Document
+
+    # Test slash command completions
+    if reader._session and reader._session.completer:
+        completer = reader._session.completer
+        doc = Document(text="/doct", cursor_position=5)
+        completions = list(completer.get_completions(doc, None))
+        assert any(c.text == "/doctor" for c in completions)
+
+        # Test @ file completions
+        doc_file = Document(text="check @inst", cursor_position=11)
+        file_comps = list(completer.get_completions(doc_file, None))
+        assert any("instructions.txt" in c.text for c in file_comps)
+

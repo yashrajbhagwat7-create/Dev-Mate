@@ -307,9 +307,9 @@
             </div>
         </div>
         <div class="header-status">
-            <div class="status-badge">
+            <div class="status-badge" id="doctor-badge">
                 <div class="pulse"></div>
-                <span>DOCTOR: HEALTHY (115/115 TESTS)</span>
+                <span id="doctor-text">DOCTOR: HEALTHY (128/128 TESTS)</span>
             </div>
         </div>
     </header>
@@ -429,7 +429,141 @@
                 </div>
             </div>
         </div>
+
+        <!-- Live Web Console Card -->
+        <div class="panel-card" style="margin-top: 1.5rem;">
+            <div class="panel-header">
+                <span class="panel-title">
+                    <span>⚡ Live Interactive Agent Console</span>
+                    <span class="code-pill" id="server-status">Connecting to Local API...</span>
+                </span>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button id="btn-doctor" style="background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.3); color: var(--primary); padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; font-family: var(--font-mono); font-size: 0.8rem;">🩺 Doctor</button>
+                    <button id="btn-tests" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: var(--accent-emerald); padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; font-family: var(--font-mono); font-size: 0.8rem;">🧪 Run Tests</button>
+                    <button id="btn-diff" style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: var(--accent-amber); padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; font-family: var(--font-mono); font-size: 0.8rem;">📑 Git Diff</button>
+                    <button id="btn-deps" style="background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); color: var(--accent-purple); padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; font-family: var(--font-mono); font-size: 0.8rem;">📦 Dependencies</button>
+                </div>
+            </div>
+
+            <div id="console-output" class="terminal-box" style="min-height: 140px; max-height: 280px; overflow-y: auto;">
+                <div class="terminal-line">
+                    <span class="term-ts">[SYSTEM]</span>
+                    <span class="term-act">READY</span>
+                    <span class="term-st">[ONLINE]</span>
+                    <span class="term-det">Type an instruction below or click quick buttons to execute tools.</span>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                <input type="text" id="prompt-input" placeholder="Ask Dev-Mate or enter a task (e.g. 'check syntax on devmate/tools.py', 'inspect tests')..." style="flex: 1; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; color: var(--text-main); font-family: var(--font-mono); font-size: 0.9rem; outline: none;" />
+                <button id="btn-send" style="background: var(--primary); color: #06080F; font-weight: 700; border: none; border-radius: 8px; padding: 0 1.5rem; cursor: pointer; font-family: var(--font-sans); font-size: 0.9rem;">Send ❯</button>
+            </div>
+        </div>
     </main>
+
+    <script>
+        const outBox = document.getElementById("console-output");
+        const statusPill = document.getElementById("server-status");
+        const promptInp = document.getElementById("prompt-input");
+
+        function logLine(act, status, msg) {
+            const now = new Date().toTimeString().split(' ')[0];
+            const div = document.createElement("div");
+            div.className = "terminal-line";
+            div.innerHTML = `<span class="term-ts">[${now}]</span> <span class="term-act">${act}</span> <span class="term-st">[${status}]</span> <span class="term-det">${msg}</span>`;
+            outBox.appendChild(div);
+            outBox.scrollTop = outBox.scrollHeight;
+        }
+
+        async function checkServer() {
+            try {
+                const res = await fetch("/api/doctor");
+                if (res.ok) {
+                    const data = await res.json();
+                    statusPill.textContent = "Live Server Active";
+                    statusPill.style.color = "#10B981";
+                    document.getElementById("doctor-text").textContent = `DOCTOR: HEALTHY (${data.python.version})`;
+                }
+            } catch (e) {
+                statusPill.textContent = "Offline Preview Mode";
+                statusPill.style.color = "#94A3B8";
+            }
+        }
+
+        document.getElementById("btn-doctor").onclick = async () => {
+            logLine("DOCTOR", "RUNNING", "Querying environment health...");
+            try {
+                const r = await fetch("/api/doctor");
+                const d = await r.json();
+                logLine("DOCTOR", "PASS", `Python: ${d.python.version} | Provider: ${d.providers.active} | Backups: ${d.backups.manifest_entries} indexed`);
+            } catch (e) {
+                logLine("DOCTOR", "ERROR", e.message);
+            }
+        };
+
+        document.getElementById("btn-tests").onclick = async () => {
+            logLine("TESTS", "RUNNING", "Executing workspace pytest suite...");
+            try {
+                const r = await fetch("/api/tests");
+                const d = await r.json();
+                logLine("TESTS", d.status, `${d.summary} in ${d.duration}s`);
+            } catch (e) {
+                logLine("TESTS", "ERROR", e.message);
+            }
+        };
+
+        document.getElementById("btn-diff").onclick = async () => {
+            logLine("GIT", "DIFF", "Querying current working tree modifications...");
+            try {
+                const r = await fetch("/api/diff");
+                const d = await r.json();
+                const preview = (d.stdout || "Clean working tree (no uncommitted diffs)").slice(0, 300);
+                logLine("GIT", "OK", preview.replace(/\n/g, " "));
+            } catch (e) {
+                logLine("GIT", "ERROR", e.message);
+            }
+        };
+
+        document.getElementById("btn-deps").onclick = async () => {
+            logLine("DEPS", "ANALYZING", "Parsing workspace import AST...");
+            try {
+                const r = await fetch("/api/deps");
+                const d = await r.json();
+                logLine("DEPS", "OK", `Analyzed ${d.total_files_analyzed} files | 3rd-Party: ${d.third_party_dependencies.join(', ') || 'None'} | Circular: ${d.circular_dependencies_detected ? 'YES' : 'None'}`);
+            } catch (e) {
+                logLine("DEPS", "ERROR", e.message);
+            }
+        };
+
+        async function sendPrompt() {
+            const prompt = promptInp.value.trim();
+            if (!prompt) return;
+            promptInp.value = "";
+            logLine("USER", "TASK", prompt);
+            try {
+                const r = await fetch("/api/chat", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({prompt: prompt})
+                });
+                const d = await r.json();
+                if (d.response) {
+                    logLine("AGENT", "DONE", d.response.slice(0, 400) + (d.response.length > 400 ? "..." : ""));
+                } else {
+                    logLine("AGENT", "INFO", d.error || "No response");
+                }
+            } catch (e) {
+                logLine("AGENT", "ERROR", e.message);
+            }
+        }
+
+        document.getElementById("btn-send").onclick = sendPrompt;
+        promptInp.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") sendPrompt();
+        });
+
+        checkServer();
+    </script>
 
     <footer>
         Dev-Mate &bull; Enterprise-Hardened AI Software Engineering Agent &bull; MIT License &copy; 2026

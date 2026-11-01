@@ -12,6 +12,36 @@ from pathlib import Path
 from .ui import style, badge, panel, Color
 
 
+COMMAND_DESCRIPTIONS = {
+    "/help": "Show interactive command reference",
+    "/doctor": "Run environment, git & provider health check",
+    "/test": "Run pytest suite with failure diagnostics",
+    "/plan": "Formulate structured plan before editing",
+    "/team": "Run dual-provider swarm (Gemini + OpenRouter)",
+    "/review": "Request independent peer code review",
+    "/syntax": "Check syntax (Python, JSON, TOML, MD, HTML)",
+    "/refs": "Find all AST references and usages of a symbol",
+    "/deps": "Analyze dependencies & circular import cycles",
+    "/outline": "Inspect AST outline of classes/functions",
+    "/undo": "Revert most recent file mutation from backup",
+    "/rollback": "Restore a specific file from backup snapshot",
+    "/audit": "Export compliance audit log to markdown",
+    "/web": "Launch local web UI dashboard server",
+    "/init": "Launch interactive setup wizard",
+    "/report": "Export structured project memory & audit",
+    "/diff": "View syntax-highlighted git diff",
+    "/status": "View git working tree status",
+    "/tokens": "View token usage & compaction savings",
+    "/lint": "Lint document/report for tables & styling",
+    "/provider": "Switch provider (openrouter | google | ollama)",
+    "/mode": "Switch mode (ask | edit | engineer | autonomous)",
+    "/paste": "Enter multi-line paste mode",
+    "/editor": "Open external editor (Notepad/nano)",
+    "/clear": "Clear terminal screen buffer",
+    "/exit": "Exit Dev-Mate session",
+}
+
+
 class InputReader:
     """Handles multi-line input, bracketed paste, file ingestion, and editor launching."""
 
@@ -23,8 +53,9 @@ class InputReader:
         if sys.stdin.isatty() and sys.stdout.isatty():
             try:
                 from prompt_toolkit import PromptSession
-                from prompt_toolkit.history import InMemoryHistory
+                from prompt_toolkit.history import FileHistory, InMemoryHistory
                 from prompt_toolkit.key_binding import KeyBindings
+                from prompt_toolkit.completion import Completer, Completion
 
                 kb = KeyBindings()
 
@@ -43,7 +74,61 @@ class InputReader:
                 def _(event):
                     event.current_buffer.insert_text('\n')
 
-                self._session = PromptSession(history=InMemoryHistory(), key_bindings=kb, multiline=True)
+                # Autocomplete for slash commands and workspace @files
+                root_ref = self.root
+
+                class DevMateCompleter(Completer):
+                    def get_completions(self, document, complete_event):
+                        text = document.text_before_cursor.lstrip()
+
+                        # Slash command autocompletion
+                        if text.startswith("/") and " " not in text:
+                            for cmd, desc in COMMAND_DESCRIPTIONS.items():
+                                if cmd.startswith(text):
+                                    yield Completion(
+                                        cmd,
+                                        start_position=-len(text),
+                                        display=cmd,
+                                        display_meta=desc
+                                    )
+
+                        # Inline @file autocompletion
+                        if "@" in text:
+                            match = re.search(r"@([^\s]*)$", text)
+                            if match:
+                                prefix = match.group(1).replace("\\", "/")
+                                try:
+                                    for p in root_ref.rglob("*"):
+                                        if any(part.startswith(".") for part in p.parts):
+                                            continue
+                                        if "__pycache__" in p.parts or "node_modules" in p.parts:
+                                            continue
+                                        if p.is_file():
+                                            rel = str(p.relative_to(root_ref)).replace("\\", "/")
+                                            if rel.startswith(prefix):
+                                                yield Completion(
+                                                    f"@{rel}",
+                                                    start_position=-len(match.group(0)),
+                                                    display=f"@{rel}",
+                                                    display_meta="file"
+                                                )
+                                except Exception:
+                                    pass
+
+                # History file persistence in .devmate/history_cli.txt
+                try:
+                    hist_dir = self.root / ".devmate"
+                    hist_dir.mkdir(parents=True, exist_ok=True)
+                    hist = FileHistory(str(hist_dir / "history_cli.txt"))
+                except Exception:
+                    hist = InMemoryHistory()
+
+                self._session = PromptSession(
+                    history=hist,
+                    completer=DevMateCompleter(),
+                    key_bindings=kb,
+                    multiline=True
+                )
             except Exception:
                 self._session = None
 
