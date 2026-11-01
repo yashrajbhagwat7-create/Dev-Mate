@@ -74,6 +74,12 @@ def test_web_get_endpoints(tmp_path):
     h_hist.do_GET()
     h_hist.send_response.assert_called_with(200)
 
+    # Test /api/chat/history
+    h_convo = create_handler("GET", "/api/chat/history", tmp_path=tmp_path)
+    h_convo.agent.history = [{"role": "user", "content": "prior turn"}]
+    h_convo.do_GET()
+    h_convo.send_response.assert_called_with(200)
+
 
 def test_web_post_chat_and_tools(tmp_path):
     (tmp_path / "sample.py").write_text("x = 10\n", encoding="utf-8")
@@ -82,6 +88,12 @@ def test_web_post_chat_and_tools(tmp_path):
     h_chat = create_handler("POST", "/api/chat", {"prompt": "hello"}, tmp_path=tmp_path)
     h_chat.do_POST()
     h_chat.send_response.assert_called_with(200)
+
+    # POST /api/chat/reset
+    h_reset = create_handler("POST", "/api/chat/reset", {}, tmp_path=tmp_path)
+    h_reset.do_POST()
+    h_reset.send_response.assert_called_with(200)
+    h_reset.agent.reset.assert_called_once()
 
     # POST /api/syntax
     h_syn = create_handler("POST", "/api/syntax", {"path": "sample.py"}, tmp_path=tmp_path)

@@ -144,3 +144,23 @@ def test_cli_fuzzy_command_suggestion(tmp_path, monkeypatch, capsys):
     assert "Did you mean" in captured.out
     assert "/doctor" in captured.out or "/status" in captured.out
 
+
+def test_cli_conversation_and_memory_commands(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    prompt_sequence = [
+        "/remember decision Agreed on side income plan: Step 2 micro-SaaS",
+        "/convo",
+        "/reset",
+        "/exit"
+    ]
+
+    with patch("devmate.cli.InputReader.read_prompt", side_effect=prompt_sequence), \
+         patch("sys.argv", ["devmate", "--root", str(tmp_path)]):
+        main()
+
+    captured = capsys.readouterr()
+    assert "REMEMBER" in captured.out
+    assert "Agreed on side income plan" in captured.out
+    assert "RESET" in captured.out
+    assert "Conversation memory cleared" in captured.out
+

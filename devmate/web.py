@@ -125,6 +125,18 @@ class DevMateWebHandler(BaseHTTPRequestHandler):
             self._send_json({"outline": out, "file": target})
             return
 
+        # API: Conversation Dialogue History
+        if path == "/api/chat/history":
+            history = []
+            if self.agent and getattr(self.agent, "history", None):
+                history = [
+                    {"role": m.get("role"), "content": m.get("content")}
+                    for m in self.agent.history
+                    if m.get("role") in {"user", "assistant"} and m.get("content")
+                ]
+            self._send_json({"history": history})
+            return
+
         # Static assets fallback
         if path.startswith("/examples/"):
             rel_file = self.config.root / path.lstrip("/")
@@ -156,6 +168,13 @@ class DevMateWebHandler(BaseHTTPRequestHandler):
                 return
             response = self.agent.run(user_prompt)
             self._send_json({"prompt": user_prompt, "response": response})
+            return
+
+        # API: Reset Chat / Conversation Memory
+        if path == "/api/chat/reset":
+            if self.agent:
+                self.agent.reset()
+            self._send_json({"status": "ok", "message": "Conversation memory reset"})
             return
 
         # API: Syntax check

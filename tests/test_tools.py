@@ -366,4 +366,17 @@ def test_export_audit_log(workspace):
     assert "TEST_ACTION" in content
 
 
+def test_remember_fact(workspace):
+    tmp_path, box = workspace
+    res = box.remember_fact("Agreed to start with micro-SaaS side income plan", category="decisions")
+    assert "Recorded into project memory under 'decisions'" in res
+
+    data = box.memory.load()
+    assert "Agreed to start with micro-SaaS side income plan" in data["decisions"]
+
+    # Test empty fact guard
+    res_empty = box.remember_fact("", category="decisions")
+    assert "Cannot remember an empty fact" in res_empty
+
+
 

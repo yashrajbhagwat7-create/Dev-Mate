@@ -1048,6 +1048,23 @@ Do NOT write code or modify files. Focus on precision, minimal footprint, and cl
         self.memory.log("PLAN", f"Goal: {goal[:100]}", "PASS")
         return plan_text
 
+    def remember_fact(self, fact: str, category: str = "decisions") -> str:
+        """
+        Record a key fact, user agreement, strategic plan, or architecture decision
+        into persistent project memory (.devmate/memory.json).
+        """
+        valid_categories = {
+            "decisions", "project", "preferences", "important_files", "known_issues"
+        }
+        clean_cat = category.strip().lower() if category and category.strip().lower() in valid_categories else "decisions"
+        clean_fact = str(fact).strip()
+        if not clean_fact:
+            return "Cannot remember an empty fact."
+
+        self.memory.remember(clean_cat, clean_fact)
+        self.memory.log("REMEMBER", f"[{clean_cat}] {clean_fact[:100]}", "PASS")
+        return f"Recorded into project memory under '{clean_cat}': {clean_fact}"
+
     def check_syntax(self, path: str) -> str:
         """
         Validate source code syntax for Python, JSON, TOML, Markdown, and HTML without running code.

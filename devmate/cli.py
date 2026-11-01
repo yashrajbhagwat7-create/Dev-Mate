@@ -44,6 +44,9 @@ def print_help():
     {style('/diff', Color.CYAN):<18} View current git diff with syntax highlighting
     {style('/memory', Color.CYAN):<18} Display structured project memory
     {style('/history', Color.CYAN):<18} Display recent activity audit log
+    {style('/convo', Color.CYAN):<18} Display active multi-turn conversation dialogue
+    {style('/reset', Color.CYAN):<18} Clear conversation memory and start fresh session
+    {style('/remember <f>', Color.CYAN):<18} Save key decision or fact permanently to project memory
     {style('/refs <sym> [p]', Color.CYAN):<18} Locate all AST references and call sites of a symbol
     {style('/syntax <path>', Color.CYAN):<18} Check file syntax (Python, JSON, TOML, MD, HTML) without running
     {style('/deps [path]', Color.CYAN):<18} Analyze package dependencies & detect circular import cycles
@@ -154,6 +157,11 @@ def main():
     print(banner(str(root), cfg.provider, cfg.mode, current_model))
     print(f"  Type {style('/help', Color.CYAN)} for commands, {style('/team', Color.CYAN)} for Gemini+OpenRouter collaboration.")
     print(f"  {style('Multi-line paste supported directly', Color.DIM)} (or use {style('/file', Color.DIM)}, {style('/paste', Color.DIM)}, {style('/editor', Color.DIM)}).\n")
+
+    if agent is not None and getattr(agent, "history", None):
+        past_turns = len([m for m in agent.history if m.get("role") == "user"])
+        if past_turns > 0:
+            print(f"  {badge('SESSION', 'dim')} Restored active conversation ({past_turns} prior turns). Type {style('/reset', Color.CYAN)} to start fresh, {style('/convo', Color.CYAN)} to review.\n")
 
     if agent is None:
         print(f"  {badge('SETUP', 'warn')} No active AI provider key detected ({agent_error}).")
@@ -538,6 +546,56 @@ def main():
 
             history_text = "\n".join(lines)
             print(f"\n{panel('Recent Activity Log', history_text, border_color=Color.BRIGHT_BLUE)}")
+            continue
+
+        # Show active conversation memory dialogue
+        if prompt in {"/convo", "/chat"}:
+            if not agent or not getattr(agent, "history", None):
+                print(f"\n{badge('INFO', 'dim')} No active conversation turns in memory. Start chatting or type {style('/help', Color.CYAN)}.\n")
+                continue
+
+            lines = []
+            turn_idx = 1
+            for m in agent.history:
+                role = m.get("role")
+                content = str(m.get("content", "")).strip()
+                if role == "user":
+                    header = f"Turn {turn_idx} [User]:"
+                    lines.append(style(header, Color.BOLD, Color.BRIGHT_CYAN))
+                    lines.append(content)
+                    lines.append("")
+                elif role == "assistant" and content:
+                    header = f"Turn {turn_idx} [Dev-Mate]:"
+                    lines.append(style(header, Color.BOLD, Color.BRIGHT_GREEN))
+                    lines.append(content)
+                    lines.append("")
+                    turn_idx += 1
+            convo_text = "\n".join(lines).strip()
+            print(f"\n{panel('Active Conversation Dialogue Memory', convo_text, border_color=Color.BRIGHT_CYAN)}")
+            continue
+
+        # Reset conversation memory to start fresh
+        if prompt in {"/reset", "/new", ":reset", ":new"}:
+            if agent:
+                agent.reset()
+            print(f"\n{badge('RESET', 'pass')} {style('Conversation memory cleared. Starting a fresh session.', Color.BOLD, Color.BRIGHT_GREEN)}")
+            continue
+
+        # Save key fact or decision permanently into project memory
+        if prompt.startswith("/remember"):
+            parts = prompt.split(None, 2)
+            if len(parts) < 2:
+                print(f"{badge('WARN', 'warn')} Usage: /remember [category] <fact>\n  Categories: decisions, project, preferences, important_files, known_issues")
+                continue
+            valid_cats = {"decisions", "project", "preferences", "important_files", "known_issues"}
+            if parts[1].lower() in valid_cats and len(parts) >= 3:
+                cat = parts[1].lower()
+                fact_str = parts[2].strip()
+            else:
+                cat = "decisions"
+                fact_str = prompt.split(None, 1)[1].strip()
+            res = box.remember_fact(fact=fact_str, category=cat)
+            print(f"\n{badge('REMEMBER', 'pass')} {style(res, Color.BOLD, Color.BRIGHT_MAGENTA)}")
             continue
 
         # Catch-all for unrecognized slash commands with intelligent fuzzy suggestions

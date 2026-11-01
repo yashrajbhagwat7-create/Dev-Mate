@@ -2,7 +2,7 @@
 
 import json
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from .providers import make_provider, ProviderError
 from .ui import badge, panel, style, Color, colorize_diff, PermissionRequest, RiskLevel
@@ -35,6 +35,11 @@ Strict Grounding and Anti-Hallucination Rules:
 
 Document & Report Quality Self-Verification:
 - When authoring or modifying documentation, reports, Markdown tables, or HTML documents, run `lint_document` to verify table integrity (no blank rows, balanced columns), typography hierarchy, and zero placeholder leaks before finalizing.
+
+Conversation Memory & Plan Continuity:
+- Maintain full continuity across the conversation: always remember earlier recommendations, advice, plans, or architectural options you proposed to the user.
+- When the user refers to an earlier proposal (e.g. 'i agree on his side income plan he suggested' or 'let's do that'), recall and build upon the specific points you previously made.
+- When key decisions, goals, or preferences are confirmed by the user, save them to project memory with `remember_fact` so they persist permanently.
 """
 
 TOOL_SCHEMAS = [
@@ -501,6 +506,28 @@ TOOL_SCHEMAS = [
             }
         }
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "remember_fact",
+            "description": "Record a key decision, user preference, architecture rule, or agreed strategy (e.g. side income plan, tech stack choice) into persistent project memory so it is permanently preserved across sessions.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "fact": {
+                        "type": "string",
+                        "description": "The exact fact, decision, plan, or preference to record permanently."
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Category name: 'decisions', 'project', 'preferences', 'important_files', or 'known_issues'.",
+                        "enum": ["decisions", "project", "preferences", "important_files", "known_issues"]
+                    }
+                },
+                "required": ["fact"]
+            }
+        }
+    },
 ]
 
 
@@ -510,13 +537,19 @@ class Agent:
         self.toolbox = toolbox
         self.provider = make_provider(config)
         self.tracker = TokenTracker()
+        self.history: List[Dict[str, Any]] = self.toolbox.memory.load_conversation()
 
         self.dispatch = {
             n["function"]["name"]: getattr(toolbox, n["function"]["name"])
             for n in TOOL_SCHEMAS
         }
 
-    def _call(self, messages: List[Dict[str, Any]]) -> str:
+    def reset(self):
+        """Reset active conversation memory to start a fresh dialogue session."""
+        self.history = []
+        self.toolbox.memory.clear_conversation()
+
+    def _call(self, messages: List[Dict[str, Any]]) -> Tuple[str, List[Dict[str, Any]]]:
         try:
             for turn in range(self.config.max_agent_turns):
                 # Dynamic token optimization (Antigravity-style rolling compaction)
@@ -534,7 +567,7 @@ class Agent:
                     result = self.provider.chat(messages, TOOL_SCHEMAS)
                 except ProviderError as pe:
                     print(f"\n{badge('ERROR', 'fail')} {style(str(pe), Color.BRIGHT_RED)}")
-                    return f"Agent stopped due to provider error: {pe}"
+                    return f"Agent stopped due to provider error: {pe}", messages
 
                 msg = result["message"]
                 messages.append(msg)
@@ -542,7 +575,7 @@ class Agent:
                 calls = msg.get("tool_calls", [])
 
                 if not calls:
-                    return msg.get("content", "")
+                    return msg.get("content", ""), messages
 
                 for call in calls:
                     fn = call.get("function") or {}
@@ -596,10 +629,10 @@ class Agent:
                         "content": str(out)
                     })
 
-            return "Stopped: maximum agent turns reached."
+            return "Stopped: maximum agent turns reached.", messages
         except KeyboardInterrupt:
             print(f"\n{badge('CANCELLED', 'warn')} {style('Task turn cancelled by user (Ctrl+C). Returning to prompt.', Color.BRIGHT_YELLOW)}")
-            return "Task cancelled by user."
+            return "Task cancelled by user.", messages
 
     def run(self, user_prompt: str, mode: str = None) -> str:
         mode = mode or self.config.mode
@@ -622,12 +655,18 @@ Recent activity:
 {recent_context}
 """
 
-        messages = [
-            {"role": "system", "content": system_context},
-            {"role": "user", "content": user_prompt}
-        ]
+        system_msg = {"role": "system", "content": system_context}
+        user_msg = {"role": "user", "content": user_prompt}
 
-        result = self._call(messages)
+        # Multi-turn conversation chain: system prompt + active conversation history + user prompt
+        messages = [system_msg] + [dict(m) for m in self.history] + [user_msg]
+
+        result, final_messages = self._call(messages)
+
+        # Update persistent conversation history (excluding dynamic system prompt)
+        self.history = [dict(m) for m in final_messages if m.get("role") != "system"]
+        self.toolbox.memory.save_conversation(self.history)
+
         self.toolbox.memory.log("AGENT", user_prompt[:300], "PASS")
         return result
 

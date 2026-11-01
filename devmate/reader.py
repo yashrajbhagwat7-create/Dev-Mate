@@ -38,6 +38,9 @@ COMMAND_DESCRIPTIONS = {
     "/paste": "Enter multi-line paste mode",
     "/editor": "Open external editor (Notepad/nano)",
     "/clear": "Clear terminal screen buffer",
+    "/reset": "Reset conversation memory and start fresh session",
+    "/convo": "Display active multi-turn conversation dialogue",
+    "/remember": "Save key decision or fact to persistent memory",
     "/exit": "Exit Dev-Mate session",
 }
 

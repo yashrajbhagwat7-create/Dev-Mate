@@ -75,3 +75,32 @@ def test_compact_new_tools():
     assert "mutation applied and verified in turn 3" in compact_tool_output("replace_lines", "Replaced lines", turn_index=3)
     assert "snapshot restored in turn 4" in compact_tool_output("undo_last_change", "Reverted state", turn_index=4)
 
+
+def test_optimize_conversation_sliding_window_pass3():
+    # Construct a multi-turn conversation with 10 user/assistant exchanges
+    messages = [
+        {"role": "system", "content": "You are Dev-Mate AI engineer."},
+        {"role": "user", "content": "Initial project goal: build micro-SaaS."},
+    ]
+    for i in range(1, 10):
+        messages.append({"role": "assistant", "content": f"Turn {i} detailed plan response with code examples and architectural notes." * 5})
+        messages.append({"role": "user", "content": f"User follow-up question for turn {i}."})
+
+    messages.append({"role": "assistant", "content": "Latest assistant proposal for current turn."})
+    messages.append({"role": "user", "content": "Final user confirmation."})
+
+    initial_tokens = estimate_messages_tokens(messages)
+    # Tight max_tokens budget of 250 tokens
+    optimized, final_tokens, saved = optimize_conversation(messages, max_tokens=250, keep_recent_turns=2)
+
+    assert final_tokens < initial_tokens
+    assert saved > 0
+    # System prompt preserved
+    assert optimized[0]["content"] == "You are Dev-Mate AI engineer."
+    # Original task preserved
+    assert optimized[1]["content"] == "Initial project goal: build micro-SaaS."
+    # Pass 3 inserted omission notice
+    assert any("omitted to maintain context token budget" in m.get("content", "") for m in optimized)
+    # Most recent user message preserved
+    assert optimized[-1]["content"] == "Final user confirmation."
+

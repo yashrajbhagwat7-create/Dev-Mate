@@ -437,11 +437,12 @@
                     <span>⚡ Live Interactive Agent Console</span>
                     <span class="code-pill" id="server-status">Connecting to Local API...</span>
                 </span>
-                <div style="display: flex; gap: 0.5rem;">
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                     <button id="btn-doctor" style="background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.3); color: var(--primary); padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; font-family: var(--font-mono); font-size: 0.8rem;">🩺 Doctor</button>
                     <button id="btn-tests" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: var(--accent-emerald); padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; font-family: var(--font-mono); font-size: 0.8rem;">🧪 Run Tests</button>
                     <button id="btn-diff" style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: var(--accent-amber); padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; font-family: var(--font-mono); font-size: 0.8rem;">📑 Git Diff</button>
                     <button id="btn-deps" style="background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); color: var(--accent-purple); padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; font-family: var(--font-mono); font-size: 0.8rem;">📦 Dependencies</button>
+                    <button id="btn-reset-chat" style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #F87171; padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; font-family: var(--font-mono); font-size: 0.8rem;">🔄 Reset Chat</button>
                 </div>
             </div>
 
@@ -483,6 +484,18 @@
                     statusPill.textContent = "Live Server Active";
                     statusPill.style.color = "#10B981";
                     document.getElementById("doctor-text").textContent = `DOCTOR: HEALTHY (${data.python.version})`;
+                }
+                // Load existing conversation memory
+                const histRes = await fetch("/api/chat/history");
+                if (histRes.ok) {
+                    const histData = await histRes.json();
+                    if (histData.history && histData.history.length > 0) {
+                        for (const turn of histData.history) {
+                            const act = turn.role === "user" ? "USER" : "AGENT";
+                            const msg = (turn.content || "").slice(0, 300) + ((turn.content || "").length > 300 ? "..." : "");
+                            logLine(act, "MEMORY", msg);
+                        }
+                    }
                 }
             } catch (e) {
                 statusPill.textContent = "Offline Preview Mode";
@@ -532,6 +545,17 @@
                 logLine("DEPS", "OK", `Analyzed ${d.total_files_analyzed} files | 3rd-Party: ${d.third_party_dependencies.join(', ') || 'None'} | Circular: ${d.circular_dependencies_detected ? 'YES' : 'None'}`);
             } catch (e) {
                 logLine("DEPS", "ERROR", e.message);
+            }
+        };
+
+        document.getElementById("btn-reset-chat").onclick = async () => {
+            logLine("RESET", "START", "Clearing conversation memory...");
+            try {
+                const r = await fetch("/api/chat/reset", { method: "POST" });
+                const d = await r.json();
+                logLine("RESET", "OK", "Conversation memory cleared. Starting fresh session.");
+            } catch (e) {
+                logLine("RESET", "ERROR", e.message);
             }
         };
 

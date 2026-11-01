@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.11+" />
   <img src="https://img.shields.io/badge/Security-Hardened-059669?style=for-the-badge&logo=shield&logoColor=white" alt="Security Hardened" />
-  <img src="https://img.shields.io/badge/Tests-140%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests Passed" />
+  <img src="https://img.shields.io/badge/Tests-147%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests Passed" />
   <img src="https://img.shields.io/badge/Multi--Agent-Swarm%20%26%20Delegation-EC4899?style=for-the-badge&logo=probot&logoColor=white" alt="Multi-Agent Swarm" />
   <img src="https://img.shields.io/badge/Context-Antigravity%20Compacted-8B5CF6?style=for-the-badge&logo=fastapi&logoColor=white" alt="Context Optimizer" />
   <img src="https://img.shields.io/badge/Providers-Gemini%20%2B%20OpenRouter%20%2B%20Ollama-6366F1?style=for-the-badge&logo=google&logoColor=white" alt="Providers" />
@@ -38,6 +38,7 @@ A lightweight, security-first, multi-provider **AI Software Engineering Agent** 
   - 📦 **Lean System Overview**: High-level tree and extension stats replace raw file lists in the system prompt.
   - ✂️ **Intelligent Output Truncation**: Bounded file reading, top search hits, and head/tail command output compression.
 - **User Experience & Interactive Workflow**:
+  - 🧠 **Multi-Turn Conversation Memory & Plan Continuity**: Full dialogue context (user prompts, plans, responses) is preserved across turns and saved to `.devmate/conversation.json`, allowing the agent to remember earlier recommendations (e.g. side income plans, architectural decisions) with 3-pass rolling window compaction.
   - 🪄 **Interactive Setup Wizard (`devmate --init` / `/init`)**: 30-second onboarding configuring Google Gemini, OpenRouter, or 100% free local Ollama with live API verification.
   - 🌐 **Built-in Local Web Dashboard (`devmate --web` / `/web`)**: Zero-dependency browser interface with live health monitor, interactive test runner, git diff viewer, and real-time chat.
   - ⌨️ **Tab Autocompletion & Command History**: Interactive autocomplete for all slash commands and `@file` paths, with persistent cross-session history in `.devmate/history_cli.txt`.
@@ -210,6 +211,9 @@ Inside the interactive `devmate ❯` prompt:
 | `/status` | View git working tree status |
 | `/diff` | View syntax-highlighted git diff |
 | `/memory` | Inspect structured project memory and saved decisions |
+| `/remember <fact>` | Save key decision or agreement permanently to `.devmate/memory.json` |
+| `/convo` | View active multi-turn conversation dialogue history |
+| `/reset` | Clear conversation memory and start a fresh dialogue session |
 | `/history` | View recent activity audit log |
 | `/help` | Display interactive command reference |
 | `/exit` | End current session |
@@ -224,9 +228,10 @@ Run the comprehensive test suite:
 pytest -v
 ```
 
-All 115 test cases verify:
+All 147 test cases verify:
 - AST structural code outliner (`view_outline`) and exact symbol lookup (`get_definition`)
 - Reversible file mutations (`replace_lines`, `rollback_file`, `undo_last_change`)
+- Persistent multi-turn dialogue memory, session continuity, and sliding window compaction
 - Network resilience with exponential backoff retry on HTTP 429 rate limits and 5xx errors
 - Local and OpenAI-compatible endpoint compatibility (`ollama`, `local`, custom base URLs)
 - Interactive CLI slash command dispatching (`/undo`, `/outline`, `/report`, `/mode`)

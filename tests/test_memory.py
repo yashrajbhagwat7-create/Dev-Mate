@@ -95,3 +95,25 @@ def test_search_and_clear_activity(memory_fixture):
     mem.clear_activity()
     assert len(mem.recent_activity()) == 0
 
+
+def test_conversation_session_storage(memory_fixture):
+    mem = memory_fixture
+    assert mem.load_conversation() == []
+
+    test_convo = [
+        {"role": "system", "content": "system prompt should be filtered"},
+        {"role": "user", "content": "can you suggest a side income plan?"},
+        {"role": "assistant", "content": "1. freelancing, 2. micro-SaaS"},
+        {"role": "user", "content": "i agree with the side income plan"}
+    ]
+    mem.save_conversation(test_convo)
+
+    loaded = mem.load_conversation()
+    assert len(loaded) == 3
+    # Ensure system prompt was excluded
+    assert all(m["role"] != "system" for m in loaded)
+    assert loaded[0]["content"] == "can you suggest a side income plan?"
+
+    mem.clear_conversation()
+    assert mem.load_conversation() == []
+

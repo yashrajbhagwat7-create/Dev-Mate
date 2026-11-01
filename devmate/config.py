@@ -47,6 +47,15 @@ class Config:
             self.openrouter_key = os.getenv("OPENROUTER_API_KEY", "")
         if self.google_key is None:
             self.google_key = os.getenv("GOOGLE_API_KEY", "")
+        # Adapt default context window budget to provider capacity when not explicitly configured
+        if "MAX_CONTEXT_TOKENS" not in os.environ:
+            p = (self.provider or "").lower()
+            if p in {"google", "gemini"}:
+                self.max_context_tokens = 128_000
+            elif p == "openrouter":
+                self.max_context_tokens = 32_000
+            else:
+                self.max_context_tokens = 16_000
 
     @property
     def devmate_dir(self) -> Path:

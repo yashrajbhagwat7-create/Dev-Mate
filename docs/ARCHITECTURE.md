@@ -307,8 +307,19 @@ Frictionless first-time user onboarding:
 ### 4.13 Zero-Dependency Local Web Dashboard (`devmate/web.py`)
 Built-in local browser interface running on Python's native `http.server`:
 - Serves the luxury dark control dashboard at `http://127.0.0.1:8080`.
-- Provides full REST API endpoints (`/api/doctor`, `/api/tests`, `/api/diff`, `/api/status`, `/api/deps`, `/api/chat`).
+- Provides full REST API endpoints (`/api/doctor`, `/api/tests`, `/api/diff`, `/api/status`, `/api/deps`, `/api/chat`, `/api/chat/history`, `/api/chat/reset`).
 - Launchable from the CLI via `devmate --web [port]` or the interactive `/web` slash command.
+
+### 4.14 Multi-Turn Conversation Memory & Session Continuity (`devmate/memory.py`, `devmate/agent.py`, `devmate/context.py`)
+Maintains full conversational memory and plan continuity across user turns and across CLI/Web restarts:
+- **Persistent Dialogue Memory**: Past user prompts, tool executions, and assistant responses are automatically preserved across turns and saved to `.devmate/conversation.json`.
+- **Adaptive Context Window Budgeting**: Dynamically allocates context window capacity based on provider capabilities (128,000 tokens for Google Gemini, 32,000 tokens for OpenRouter, or user-configured `MAX_CONTEXT_TOKENS`).
+- **3-Pass Context Window Optimization**:
+  - *Pass 1 (Tool Output Compaction)*: Older tool reads and command executions are compacted to high-density 1-line summaries.
+  - *Pass 2 (Assistant Text Compression)*: Older assistant messages are compressed.
+  - *Pass 3 (Sliding Window Compaction)*: If conversation reaches hundreds of turns, older middle turns are safely pruned in atomic tool blocks with an in-context notice, ensuring token limits are never exceeded while preserving initial goals and recent dialogue.
+- **Persistent Decision Capture (`remember_fact`)**: Built-in tool and slash command (`/remember <cat> <fact>`) allowing the agent and user to permanently record agreed strategies (e.g. side income plans, architecture guidelines) into `.devmate/memory.json`.
+- **Session Reset**: `/reset` (CLI) and `/api/chat/reset` (Web Dashboard) clear dialogue history to begin fresh sessions on demand.
 
 ---
 
@@ -321,7 +332,8 @@ devmate/
 ├── .devmate/                       # Persistent agent state & local audit
 │   ├── backups/                    # Timestamped pre-edit file backups
 │   ├── activity.jsonl              # Chronological activity audit trail
-│   ├── memory.json                 # Structured project memory
+│   ├── conversation.json           # Persistent multi-turn dialogue memory
+│   ├── memory.json                 # Structured project memory & decisions
 │   └── mistakes.json               # Recorded failure modes & fixes
 ├── devmate/                        # Core Python Package (Only pure agent logic)
 │   ├── __init__.py                 # Public package exports & version
@@ -350,20 +362,20 @@ devmate/
 ├── scripts/                        # Utility & Generation Scripts
 │   ├── generate_ds_pdf.py          # Data structures PDF generator
 │   └── generate_simple_pdf.py      # Simple PDF builder script
-├── tests/                          # Automated Pytest Suite (140 Unit Tests)
-│   ├── test_agent.py               # ReAct loop, tool dispatch & autonomous iteration tests
+├── tests/                          # Automated Pytest Suite (147 Unit Tests)
+│   ├── test_agent.py               # ReAct loop, tool dispatch, multi-turn memory & iteration tests
 │   ├── test_clarification.py       # Clarification modal & anti-hallucination tests
-│   ├── test_cli.py                 # Slash commands, one-shot prompt, fuzzy match & flags
+│   ├── test_cli.py                 # Slash commands, /reset, /convo, /remember, fuzzy match & flags
 │   ├── test_config.py              # Configuration & provider factory tests
-│   ├── test_context.py             # Token compaction & text compression tests
+│   ├── test_context.py             # Token compaction, 3-pass sliding window & compression tests
 │   ├── test_design.py              # WCAG contrast, typography & table linter tests
-│   ├── test_memory.py              # Memory persistence & activity log tests
+│   ├── test_memory.py              # Memory persistence, conversation storage & activity log tests
 │   ├── test_permission.py          # Interactive permission modals & risk tiers
 │   ├── test_reader.py              # Autocompleter, @file expansion & file ingestion tests
 │   ├── test_resilience.py          # HTTP 429/5xx retry backoff & custom endpoint tests
 │   ├── test_security.py            # Path traversal, secret leak & device name tests
 │   ├── test_subagent.py            # Swarm collaboration & subagent role isolation
-│   ├── test_tools.py               # AST outline, definition, refs, deps, syntax & test runner
+│   ├── test_tools.py               # AST tools, remember_fact, syntax, deps & test runner
 │   ├── test_web.py                 # Built-in web dashboard HTTP & REST API tests
 │   └── test_wizard.py              # Interactive setup wizard & key verification tests
 ├── .env.example                    # Environment template with safety controls
@@ -382,6 +394,7 @@ devmate/
 | `read_file` | `🟢 LOW` | Escaping root blocked, `.env`/`.git` blocked, binary guard, line cap (200) | No (Safe) |
 | `search_files` | `🟢 LOW` | Protected dirs omitted, text-only extension filter, hit cap | No (Safe) |
 | `list_files` | `🟢 LOW` | Protected dirs omitted, 100-file pagination limit | No (Safe) |
+| `remember_fact` | `🟢 LOW` | Persistent project memory category validation, non-destructive | No (Safe) |
 | `view_outline` | `🟢 LOW` | AST-based syntax analysis, read-only extraction of classes & functions | No (Safe) |
 | `get_definition` | `🟢 LOW` | AST symbol resolution, line range extraction, read-only | No (Safe) |
 | `find_references` | `🟢 LOW` | AST reference finder across project python files, scope tracking | No (Safe) |
@@ -410,7 +423,7 @@ devmate/
 
 ## 7. Testing & Verification Architecture
 
-Dev-Mate's test suite covers 15 distinct testing domains spanning **140 tests with ~80% statement coverage**:
+Dev-Mate's test suite covers 15 distinct testing domains spanning **147 tests with ~80% statement coverage**:
 
 1. **Clarification Protocol (`test_clarification.py`)**: Tests modal card formatting, indexed selection, custom answers, and anti-hallucination system prompt rules.
 2. **Configuration & Providers (`test_config.py`)**: Tests boolean environment flag parsing, provider factory dispatch, Ollama local configuration, and missing key exceptions.

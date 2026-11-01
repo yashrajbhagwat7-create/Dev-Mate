@@ -14,6 +14,7 @@ class Memory:
         self.memory_file = self.devmate_dir / "memory.json"
         self.activity_file = self.devmate_dir / "activity.jsonl"
         self.mistakes_file = self.devmate_dir / "mistakes.json"
+        self.conversation_file = self.devmate_dir / "conversation.json"
 
         self.devmate_dir.mkdir(exist_ok=True)
         (self.devmate_dir / "backups").mkdir(exist_ok=True)
@@ -278,6 +279,40 @@ class Memory:
     def clear_activity(self):
         try:
             self.activity_file.write_text("", encoding="utf-8")
+        except OSError:
+            pass
+
+    # -------------------------
+    # CONVERSATION SESSION MEMORY
+    # -------------------------
+
+    def load_conversation(self) -> List[Dict[str, Any]]:
+        """Load persistent multi-turn conversation history from .devmate/conversation.json."""
+        if not self.conversation_file.exists():
+            return []
+        try:
+            data = json.loads(self.conversation_file.read_text(encoding="utf-8"))
+            return data if isinstance(data, list) else []
+        except (json.JSONDecodeError, OSError):
+            return []
+
+    def save_conversation(self, messages: List[Dict[str, Any]]):
+        """Save active conversation turns (excluding dynamic system prompt) to disk."""
+        try:
+            # Dynamic system messages are regenerated on each run with live context, so exclude them
+            clean_history = [dict(m) for m in messages if m.get("role") != "system"]
+            self.conversation_file.write_text(
+                json.dumps(clean_history, indent=2, ensure_ascii=False),
+                encoding="utf-8"
+            )
+        except OSError:
+            pass
+
+    def clear_conversation(self):
+        """Reset conversation session history to start completely fresh."""
+        try:
+            if self.conversation_file.exists():
+                self.conversation_file.unlink()
         except OSError:
             pass
 

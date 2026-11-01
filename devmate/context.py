@@ -139,6 +139,34 @@ def optimize_conversation(
             content = str(msg.get("content", ""))
             if len(content) > 300:
                 optimized[idx]["content"] = compress_text(content, max_chars=300)
+        current_tokens = estimate_messages_tokens(optimized)
+
+    # Pass 3: Sliding window compaction if still over budget
+    if current_tokens > max_tokens and cutoff_index > 2:
+        omitted_turns = 0
+        idx = 2
+        while idx < cutoff_index and current_tokens > max_tokens:
+            msg = optimized[idx]
+            # Safely drop assistant tool call together with its tool responses to maintain valid schema
+            if msg.get("role") == "assistant" and msg.get("tool_calls"):
+                to_remove = 1
+                while idx + to_remove < cutoff_index and optimized[idx + to_remove].get("role") == "tool":
+                    to_remove += 1
+                del optimized[idx:idx + to_remove]
+                cutoff_index -= to_remove
+            else:
+                del optimized[idx]
+                cutoff_index -= 1
+            omitted_turns += 1
+            current_tokens = estimate_messages_tokens(optimized)
+
+        if omitted_turns > 0:
+            notice = {
+                "role": "system",
+                "content": f"[{omitted_turns} earlier conversation items omitted to maintain context token budget.]"
+            }
+            optimized.insert(2, notice)
+            current_tokens = estimate_messages_tokens(optimized)
 
     final_tokens = estimate_messages_tokens(optimized)
     saved_tokens = max(0, initial_tokens - final_tokens)
