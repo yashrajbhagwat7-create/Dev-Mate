@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -18,9 +19,12 @@ class Config:
     root: Path
     provider: str = os.getenv("DEV_MATE_PROVIDER", "openrouter")
     mode: str = os.getenv("DEV_MATE_MODE", "ask")
-    openrouter_key: str = os.getenv("OPENROUTER_API_KEY", "")
+    openrouter_key: Optional[str] = None
     openrouter_model: str = os.getenv("OPENROUTER_MODEL", "openrouter/free")
-    google_key: str = os.getenv("GOOGLE_API_KEY", "")
+    openrouter_base_url: str = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+    ollama_base_url: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+    ollama_model: str = os.getenv("OLLAMA_MODEL", "qwen2.5-coder:latest")
+    google_key: Optional[str] = None
     google_model: str = os.getenv("GOOGLE_MODEL", "gemini-2.5-flash")
     max_agent_turns: int = int(os.getenv("MAX_AGENT_TURNS", "30"))
     max_engineering_iterations: int = int(os.getenv("MAX_ENGINEERING_ITERATIONS", "10"))
@@ -37,6 +41,12 @@ class Config:
     compact_context: bool = as_bool("COMPACT_CONTEXT", default=True)
     max_file_read_lines: int = int(os.getenv("MAX_FILE_READ_LINES", "150"))
     max_search_results: int = int(os.getenv("MAX_SEARCH_RESULTS", "25"))
+
+    def __post_init__(self):
+        if self.openrouter_key is None:
+            self.openrouter_key = os.getenv("OPENROUTER_API_KEY", "")
+        if self.google_key is None:
+            self.google_key = os.getenv("GOOGLE_API_KEY", "")
 
     @property
     def devmate_dir(self) -> Path:

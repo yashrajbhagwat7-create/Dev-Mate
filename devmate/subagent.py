@@ -38,7 +38,11 @@ Accomplish the assigned objective with your available tools and return a clear, 
 }
 
 # Read-only tool schemas for safe subagent delegation
-READONLY_TOOL_NAMES = {"list_files", "read_file", "search_files", "project_summary", "git_status", "git_diff"}
+READONLY_TOOL_NAMES = {
+    "list_files", "read_file", "search_files", "project_summary",
+    "git_status", "git_diff", "view_outline", "get_definition", "grep_search",
+    "check_syntax", "find_references", "analyze_dependencies", "run_doctor"
+}
 
 
 class SubAgent:

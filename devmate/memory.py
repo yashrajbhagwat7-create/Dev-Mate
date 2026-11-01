@@ -280,3 +280,49 @@ class Memory:
             self.activity_file.write_text("", encoding="utf-8")
         except OSError:
             pass
+
+    def export_summary(self) -> str:
+        """Export project memory, mistakes, and recent activity as a clean Markdown report."""
+        mem = self.load()
+        mistakes = self.load_mistakes()
+        recent = self.recent_activity(limit=15)
+
+        lines = [
+            "# Dev-Mate Project Memory & Audit Report",
+            f"\n*Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}*",
+            "\n## 📌 Architectural Decisions & Preferences",
+        ]
+
+        decisions = mem.get("decisions", [])
+        if decisions:
+            for d in decisions:
+                lines.append(f"- {d}")
+        else:
+            lines.append("- *No specific architectural decisions recorded yet.*")
+
+        lines.append("\n## 🔍 Important Project Files")
+        imp_files = mem.get("important_files", [])
+        if imp_files:
+            for f in imp_files:
+                lines.append(f"- `{f}`")
+        else:
+            lines.append("- *No key files marked.*")
+
+        lines.append("\n## ⚠️ Known Issues & Mistakes")
+        if mistakes:
+            for m in mistakes[-10:]:
+                lines.append(f"- **[{m.get('type', 'Error')}]** {m.get('description', '')}")
+                if m.get("correction"):
+                    lines.append(f"  *Fix:* {m['correction']}")
+        else:
+            lines.append("- *Zero recorded mistakes.*")
+
+        lines.append("\n## 🕒 Recent Activity Audit Trail (Last 15 actions)")
+        if recent:
+            for r in recent:
+                st = f" [{r['status']}]" if "status" in r else ""
+                lines.append(f"- `{r.get('timestamp', '')}` **{r.get('action', '')}**{st}: {r.get('details', '')}")
+        else:
+            lines.append("- *No recent activity.*")
+
+        return "\n".join(lines)

@@ -1,6 +1,7 @@
-"""LLM provider adapters for OpenRouter and Google Gemini."""
+"""LLM provider adapters for OpenRouter, Google Gemini, and local OpenAI-compatible endpoints."""
 
 import json
+import time
 from typing import Any, Dict, List
 import requests
 
@@ -9,46 +10,73 @@ class ProviderError(RuntimeError):
     pass
 
 
-class OpenRouterProvider:
-    """OpenRouter OpenAI-compatible chat-completions adapter."""
+def _request_with_retry(post_fn, max_retries: int = 3, initial_delay: float = 1.0):
+    """Execute an HTTP request with exponential backoff on rate limits (429) and transient server errors (5xx)."""
+    delay = initial_delay
+    last_err = None
+    for attempt in range(max_retries):
+        try:
+            r = post_fn()
+            if r.status_code in {429, 500, 502, 503, 504} and attempt < max_retries - 1:
+                time.sleep(delay)
+                delay *= 2.0
+                continue
+            return r
+        except requests.RequestException as e:
+            last_err = e
+            if attempt < max_retries - 1:
+                time.sleep(delay)
+                delay *= 2.0
+            else:
+                raise
+    if last_err:
+        raise last_err
 
-    def __init__(self, api_key: str, model: str):
+
+class OpenRouterProvider:
+    """OpenRouter and OpenAI-compatible chat-completions adapter."""
+
+    def __init__(self, api_key: str, model: str, base_url: str = "https://openrouter.ai/api/v1"):
         if not api_key:
             raise ProviderError("OPENROUTER_API_KEY is not set. Set it in your .env file or environment.")
         self.key, self.model = api_key, model
+        self.base_url = base_url.rstrip("/")
 
     def chat(self, messages: List[Dict[str, Any]], tools: List[Dict[str, Any]]) -> Dict[str, Any]:
+        url = f"{self.base_url}/chat/completions"
         try:
-            r = requests.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self.key}",
-                    "Content-Type": "application/json",
-                    "X-Title": "Dev-Mate"
-                },
-                json={
-                    "model": self.model,
-                    "messages": messages,
-                    "tools": tools,
-                    "tool_choice": "auto"
-                },
-                timeout=180,
+            r = _request_with_retry(
+                lambda: requests.post(
+                    url,
+                    headers={
+                        "Authorization": f"Bearer {self.key}",
+                        "Content-Type": "application/json",
+                        "X-Title": "Dev-Mate"
+                    },
+                    json={
+                        "model": self.model,
+                        "messages": messages,
+                        "tools": tools,
+                        "tool_choice": "auto"
+                    },
+                    timeout=180,
+                )
             )
         except requests.RequestException as e:
-            raise ProviderError(f"OpenRouter connection failed: {e}")
+            raise ProviderError(f"Connection failed ({self.base_url}): {e}")
 
         if not r.ok:
-            raise ProviderError(f"OpenRouter HTTP {r.status_code}: {r.text[:2000]}")
+            raise ProviderError(f"Provider HTTP {r.status_code}: {r.text[:2000]}")
 
         try:
             data = r.json()
         except ValueError:
-            raise ProviderError("OpenRouter returned invalid JSON response")
+            raise ProviderError("Provider returned invalid JSON response")
 
         choices = data.get("choices") or []
         if not choices:
-            error_msg = data.get("error", "No response choices returned by OpenRouter")
-            raise ProviderError(f"OpenRouter API error: {error_msg}")
+            error_msg = data.get("error", "No response choices returned by provider")
+            raise ProviderError(f"Provider API error: {error_msg}")
 
         msg = choices[0].get("message") or {}
         return {
@@ -139,11 +167,13 @@ class GoogleProvider:
             body["systemInstruction"] = {"parts": [{"text": system}]}
 
         try:
-            r = requests.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent",
-                headers={"x-goog-api-key": self.key, "Content-Type": "application/json"},
-                json=body,
-                timeout=180,
+            r = _request_with_retry(
+                lambda: requests.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent",
+                    headers={"x-goog-api-key": self.key, "Content-Type": "application/json"},
+                    json=body,
+                    timeout=180,
+                )
             )
         except requests.RequestException as e:
             raise ProviderError(f"Google Gemini connection failed: {e}")
@@ -193,9 +223,15 @@ class GoogleProvider:
 
 
 def make_provider(config):
-    if config.provider.lower() in {"google", "gemini"}:
+    p = config.provider.lower()
+    if p in {"google", "gemini"}:
         return GoogleProvider(config.google_key, config.google_model)
-    return OpenRouterProvider(config.openrouter_key, config.openrouter_model)
+    elif p in {"ollama", "local"}:
+        base_url = getattr(config, "ollama_base_url", "http://localhost:11434/v1")
+        model = getattr(config, "ollama_model", "qwen2.5-coder:latest")
+        return OpenRouterProvider(api_key="ollama", model=model, base_url=base_url)
+    base_url = getattr(config, "openrouter_base_url", "https://openrouter.ai/api/v1")
+    return OpenRouterProvider(config.openrouter_key, config.openrouter_model, base_url=base_url)
 
 
 def get_provider(config, name: str = None):
@@ -203,7 +239,13 @@ def get_provider(config, name: str = None):
     chosen = (name or config.provider).lower()
     if chosen in {"google", "gemini"}:
         return GoogleProvider(config.google_key, config.google_model)
+    elif chosen in {"ollama", "local"}:
+        base_url = getattr(config, "ollama_base_url", "http://localhost:11434/v1")
+        model = getattr(config, "ollama_model", "qwen2.5-coder:latest")
+        return OpenRouterProvider(api_key="ollama", model=model, base_url=base_url)
     elif chosen in {"openrouter", "openai"}:
-        return OpenRouterProvider(config.openrouter_key, config.openrouter_model)
+        base_url = getattr(config, "openrouter_base_url", "https://openrouter.ai/api/v1")
+        return OpenRouterProvider(config.openrouter_key, config.openrouter_model, base_url=base_url)
     return make_provider(config)
+
 

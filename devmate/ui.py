@@ -477,3 +477,24 @@ def render_lint_report(report: Any) -> str:
     return panel(f"Document Quality Linter: {display_name}", "\n".join(lines), border_color=Color.BRIGHT_MAGENTA)
 
 
+def render_doctor_card(health: dict) -> str:
+    """Format an interactive environment and provider health check card."""
+    lines = []
+    for key, data in health.items():
+        st = data.get("status", "INFO")
+        det = data.get("details", "")
+        name = key.replace("_", " ").title()
+        badge_st = "pass" if st == "PASS" else ("fail" if st == "FAIL" else "warn")
+        lines.append(f"  {badge(st, badge_st)} {style(name, Color.BOLD, Color.WHITE):<18} : {det}")
+
+    return panel("🩺 Dev-Mate Environment & Health Doctor", "\n".join(lines), border_color=Color.BRIGHT_GREEN)
+
+
+def render_plan_card(goal: str, plan_text: str) -> str:
+    """Format an interactive implementation plan card."""
+    clean_lines = plan_text.strip().splitlines()
+    body = "\n".join([f"{style('Goal:', Color.BOLD, Color.BRIGHT_WHITE)} {goal}", ""] + clean_lines)
+    return panel("📋 Implementation Plan", body, border_color=Color.BRIGHT_CYAN)
+
+
+

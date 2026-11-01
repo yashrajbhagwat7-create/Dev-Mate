@@ -41,3 +41,13 @@ def test_missing_api_key_raises_error(tmp_path):
     cfg2 = Config(root=tmp_path, provider="google", google_key="")
     with pytest.raises(ProviderError, match="GOOGLE_API_KEY is not set"):
         make_provider(cfg2)
+
+
+def test_ollama_provider(tmp_path):
+    from devmate.providers import get_provider
+    cfg = Config(root=tmp_path, provider="ollama")
+    p = get_provider(cfg, "ollama")
+    assert isinstance(p, OpenRouterProvider)
+    assert p.key == "ollama"
+    assert "11434" in p.base_url
+

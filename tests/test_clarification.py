@@ -10,7 +10,7 @@ from devmate.ui import render_clarification_card, prompt_clarification
 
 @pytest.fixture
 def workspace(tmp_path):
-    cfg = Config(root=tmp_path, allow_delete=True, allow_commands=True)
+    cfg = Config(root=tmp_path, allow_delete=True, allow_commands=True, openrouter_key="test-key", google_key="test-key")
     box = ToolBox(cfg, approve=lambda q: True, clarify=lambda q, opts: "Option A")
     return cfg, box
 

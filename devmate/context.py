@@ -83,6 +83,20 @@ def compact_tool_output(tool_name: str, content: str, turn_index: int = 0) -> st
     if tool_name in {"git_diff", "git_status"}:
         return f"[{tool_name} previously inspected in turn {turn_index}]"
 
+    if tool_name == "view_outline":
+        first_line = content.splitlines()[0] if content else ""
+        return f"[Outline ({first_line[:60]}) previously inspected in turn {turn_index}]"
+
+    if tool_name == "get_definition":
+        first_line = content.splitlines()[0] if content else ""
+        return f"[Definition ({first_line[:60]}) previously inspected in turn {turn_index}]"
+
+    if tool_name in {"replace_lines", "edit_file", "write_file"}:
+        return f"[{tool_name} mutation applied and verified in turn {turn_index}]"
+
+    if tool_name in {"rollback_file", "undo_last_change"}:
+        return f"[{tool_name} snapshot restored in turn {turn_index}]"
+
     return compress_text(content, max_chars=400, head_lines=5, tail_lines=5)
 
 

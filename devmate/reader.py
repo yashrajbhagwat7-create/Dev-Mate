@@ -120,7 +120,8 @@ class InputReader:
         Interactive paste buffer mode for pasting huge documents, logs, or multi-page prompts.
         Submits on ':end', 'EOF', or Ctrl+Z/Ctrl+D.
         """
-        print(f"\n{panel('Multi-Line Paste Buffer', 'Paste your text below. Type \':end\' on a new line or press Ctrl+Z / Ctrl+D to submit.', border_color=Color.BRIGHT_MAGENTA)}")
+        msg = "Paste your text below. Type ':end' on a new line or press Ctrl+Z / Ctrl+D to submit."
+        print(f"\n{panel('Multi-Line Paste Buffer', msg, border_color=Color.BRIGHT_MAGENTA)}")
         lines = []
         while True:
             try:

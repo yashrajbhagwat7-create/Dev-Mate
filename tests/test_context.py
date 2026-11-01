@@ -67,3 +67,11 @@ def test_token_tracker():
     assert tracker.total_saved_tokens == 3000
     badge_text = tracker.badge_str(1500, 3000)
     assert "saved ~66%" in badge_text
+
+
+def test_compact_new_tools():
+    assert "previously inspected in turn 1" in compact_tool_output("view_outline", "File: calc.py (20 lines)", turn_index=1)
+    assert "previously inspected in turn 2" in compact_tool_output("get_definition", "=== Class 'User' ===", turn_index=2)
+    assert "mutation applied and verified in turn 3" in compact_tool_output("replace_lines", "Replaced lines", turn_index=3)
+    assert "snapshot restored in turn 4" in compact_tool_output("undo_last_change", "Reverted state", turn_index=4)
+

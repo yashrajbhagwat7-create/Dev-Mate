@@ -253,6 +253,254 @@ TOOL_SCHEMAS = [
             }
         }
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "view_outline",
+            "description": "Extract a high-level structural outline (classes, methods, functions, docstrings) of a source file. Extremely token-efficient for exploring architecture without loading full files.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Path to the source file relative to project root."
+                    }
+                },
+                "required": ["path"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_definition",
+            "description": "Find and extract the exact source code, docstring, and line range of a function, class, or method by name using AST analysis.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol": {
+                        "type": "string",
+                        "description": "Name of the class, function, or method to look up."
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "Optional specific file path to search within. If omitted, searches project Python files."
+                    }
+                },
+                "required": ["symbol"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "replace_lines",
+            "description": "Replace an exact line range [start_line, end_line] in a file with new content. Deterministic alternative to edit_file.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Path to the file to modify."
+                    },
+                    "start_line": {
+                        "type": "integer",
+                        "description": "First line number to replace (inclusive, 1-indexed)."
+                    },
+                    "end_line": {
+                        "type": "integer",
+                        "description": "Last line number to replace (inclusive, 1-indexed)."
+                    },
+                    "new_content": {
+                        "type": "string",
+                        "description": "New content to insert in place of the specified line range."
+                    }
+                },
+                "required": ["path", "start_line", "end_line", "new_content"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "rollback_file",
+            "description": "Revert a specific file to its most recent pre-modification backup snapshot.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Path to the file to restore."
+                    }
+                },
+                "required": ["path"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "undo_last_change",
+            "description": "Revert the most recent file mutation made in the project workspace.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "grep_search",
+            "description": "Search workspace text files using regular expressions. Powerful for pattern and structural matching.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "pattern": {
+                        "type": "string",
+                        "description": "Regex pattern to search for."
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "Subdirectory to restrict search within. Defaults to project root."
+                    },
+                    "case_sensitive": {
+                        "type": "boolean",
+                        "description": "Whether search is case-sensitive (default: false)."
+                    }
+                },
+                "required": ["pattern"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "git_commit",
+            "description": "Create a git commit of tracked changes with human approval.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "Concise git commit message."
+                    }
+                },
+                "required": ["message"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "plan_task",
+            "description": "Formulate a structured, non-destructive step-by-step implementation plan for a goal before modifying files.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "goal": {
+                        "type": "string",
+                        "description": "High-level feature, refactoring, or bugfix goal to plan."
+                    }
+                },
+                "required": ["goal"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "check_syntax",
+            "description": "Validate source code syntax for Python, JSON, TOML, Markdown, or HTML files without executing code.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Path to the file to check for syntax errors."
+                    }
+                },
+                "required": ["path"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "find_references",
+            "description": "Find all AST references, usages, and call sites of a symbol across project Python files.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol": {
+                        "type": "string",
+                        "description": "Name of the symbol (function, class, variable, attribute) to search for."
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "Optional subdirectory or file to restrict search to."
+                    }
+                },
+                "required": ["symbol"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "run_tests",
+            "description": "Execute pytest or unittest test suite inside the workspace and return a structured summary of passed, failed, and error counts.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "test_target": {
+                        "type": "string",
+                        "description": "Optional specific test file or directory path (e.g., 'tests/test_tools.py')."
+                    },
+                    "marker": {
+                        "type": "string",
+                        "description": "Optional pytest marker filter expression (e.g., 'unit')."
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyze_dependencies",
+            "description": "Analyze Python import relationships across the workspace, classify external vs stdlib dependencies, and check for circular import cycles.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Optional specific file or folder to analyze. Defaults to entire workspace."
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "export_audit_log",
+            "description": "Export a structured markdown audit and compliance report of all agent actions, tool calls, and backups.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "output_path": {
+                        "type": "string",
+                        "description": "Optional relative path to write the markdown report to."
+                    }
+                },
+                "required": []
+            }
+        }
+    },
 ]
 
 
@@ -331,7 +579,14 @@ class Agent:
                             out = f"SECURITY ERROR: {pe}"
                             print(f"  {badge('BLOCKED', 'fail')} {style(str(pe), Color.BRIGHT_RED)}")
                         except Exception as e:
-                            out = f"TOOL ERROR: {type(e).__name__}: {e}"
+                            tip = ""
+                            if isinstance(e, FileNotFoundError):
+                                tip = " (Tip: Use list_files or search_files to confirm existing workspace file paths.)"
+                            elif isinstance(e, ValueError) and name == "edit_file":
+                                tip = " (Tip: Check whitespace/indentation with read_file, or use replace_lines for deterministic line replacements.)"
+                            elif isinstance(e, SyntaxError):
+                                tip = " (Tip: Check check_syntax output to locate the unclosed quote or syntax issue.)"
+                            out = f"TOOL ERROR: {type(e).__name__}: {e}{tip}"
                             print(f"  {badge('ERROR', 'fail')} {style(str(e), Color.BRIGHT_RED)}")
 
                     messages.append({

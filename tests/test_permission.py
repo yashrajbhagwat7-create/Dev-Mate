@@ -19,7 +19,7 @@ from devmate.ui import (
 def workspace(tmp_path):
     (tmp_path / "app.py").write_text("print('hello')", encoding="utf-8")
     (tmp_path / "temp.txt").write_text("temporary file", encoding="utf-8")
-    cfg = Config(root=tmp_path, allow_delete=False, allow_commands=False)
+    cfg = Config(root=tmp_path, allow_delete=False, allow_commands=False, openrouter_key="test-key", google_key="test-key")
     box = ToolBox(cfg, approve=lambda req: True)
     return tmp_path, cfg, box
 

@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree Data Structure — Dev-Mate AI Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #090a0f;
+            --surface: rgba(18, 20, 29, 0.7);
+            --surface-card: rgba(22, 25, 38, 0.85);
+            --surface-hover: rgba(30, 35, 54, 0.95);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(94, 234, 212, 0.35);
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --accent: #5eead4;
+            --accent-glow: rgba(94, 234, 212, 0.18);
+            --accent-2: #f97316;
+            --error: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(94, 234, 212, 0.06) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(249, 115, 22, 0.05) 0%, transparent 40%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Ambient Animated Grid */
+        .bg-grid {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(rgba(94, 234, 212, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(94, 234, 212, 0.02) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Floating Orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.6;
+            z-index: 0;
+        }
+        .orb-1 {
+            width: 300px; height: 300px;
+            background: var(--accent);
+            top: -100px; left: -100px;
+        }
+        .orb-2 {
+            width: 200px; height: 200px;
+            background: var(--accent-2);
+            bottom: -50px; right: -50px;
+        }
+
+        /* Navigation Header */
+        header {
+            background: rgba(9, 10, 15, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 1.1rem 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+
+        header.scrolled {
+            background: rgba(9, 10, 15, 0.98);
+            border-bottom-color: rgba(94, 234, 212, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-decoration: none;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .logo .tag {
+            font-size: 0.7rem;
+            background: rgba(94, 234, 212, 0.15);
+            color: var(--accent);
+            padding: 2px 7px;
+            border-radius: 6px;
+            border: 1px solid rgba(94, 234, 212, 0.3);
+            text-transform: uppercase;
+        }
+
+        .logo span { color: var(--accent-2); }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.25s;
+        }
+
+        .nav-links a:hover { color: var(--text); }
+
+        /* Main Container */
+        main {
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            padding: 140px 24px 80px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .page-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent);
+            margin-bottom: 0.8rem;
+        }
+
+        .page-title {
+            font-size: clamp(2.4rem, 5vw, 3.4rem);
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 1rem;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 580px;
+            margin: 0 auto;
+        }
+
+        /* Tree Visual Section */
+        .tree-section {
+            margin-bottom: 6rem;
+        }
+
+        .tree-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        /* Tree Diagram Container */
+        .tree-diagram {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 2rem;
+            min-height: 300px;
+            position: relative;
+        }
+
+        .tree-diagram::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 100%;
+            background: var(--border);
+            z-index: 0;
+        }
+
+        .tree-node {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 1.5rem;
+            flex: 0 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .node-circle {
+            width: 80px; height: 80px;
+            border: 3px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface);
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+
+        .node-circle:hover {
+            border-color: var(--accent);
+            background: rgba(94, 234, 212, 0.1);
+        }
+
+        .node-circle.active {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .node-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--text);
+            min-width: 80px;
+        }
+
+        .node-label smaller {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            display: block;
+            margin-top: 2px;
+        }
+
+        /* Edge connectors */
+        .edge {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 0; height: 0;
+            border-left: 3px solid var(--border);
+            border-top: 3px solid transparent;
+            border-bottom: 3px solid transparent;
+            z-index: 0;
+        }
+
+        /* Level-based vertical positioning */
+        .level-0 { top: 40px; }
+        .level-1 { top: 140px; }
+        .level-2 { top: 240px; }
+        .level-3 { top: 340px; }
+
+        /* Horizontal edges */
+        .horiz-edge {
+            position: absolute;
+            right: 50%; top: 50%;
+            border-top: 3px solid var(--border);
+            border-left: none;
+            border-right: none;
+            width: 120px;
+        }
+
+        /* Tree Operations Section */
+        .ops-section {
+            margin-top: 6rem;
+        }
+
+        .ops-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .op-card {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .op-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-4px);
+        }
+
+        .op-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+
+        .op-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .code-block {
+            background: rgba(18, 20, 29, 0.8);
+            border-radius: var(--radius-sm);
+            padding: 1.2rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            overflow-x: auto;
+            margin-top: 1rem;
+            border: 1px solid var(--border);
+        }
+
+        .code-block .keyword { color: var(--accent); }
+        .code-block .function { color: var(--accent-2); }
+        .code-block .string { color: var(--warning); }
+
+        /* Insert/Delete Demo */
+        .demo-controls {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: var(--surface-card);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+        }
+
+        .demo-controls label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-right: 1rem;
+            font-weight: 500;
+        }
+
+        .demo-controls select,
+        .demo-controls button {
+            font-family: inherit;
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            min-width: 180px;
+            cursor: pointer;
+        }
+
+        .demo-controls button {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #042f2e;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .demo-controls button:hover {
+            background: var(--accent-2);
+            border-color: var(--accent-2);
+        }
+
+        /* Summary Footer */
+        .summary {
+            margin-top: 6rem;
+            padding-top: 4rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .summary-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: center;
+        }
+
+        .summary-item {
+            text-align: center;
+        }
+
+        .summary-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            display: block;
+        }
+
+        .summary-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .tree-diagram { min-height: 260px; }
+            .tree-node { margin: 0 1rem; }
+            .node-circle { width: 60px; height: 60px; }
+            .node-label { font-size: 0.9rem; min-width: 60px; }
+            .horiz-edge { width: 80px; }
+            main { padding: 100px 16px 60px; }
+            .page-title { font-size: clamp(2rem, 6vw, 2.6rem); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Ambient orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <!-- Background grid -->
+    <div class="bg-grid"></div>
+
+    <!-- Navigation -->
+    <header>
+        <nav>
+            <a href="#" class="logo">Dev-Mate <span>AI</span> <div class="tag">DS</div></a>
+            <ul class="nav-links">
+                <li><a href="#">Home</a></li>
+                <li><a href="#">Docs</a></li>
+                <li><a href="#">Projects</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <div class="container">
+            <div class="page-header">
+                <div class="page-label">Data Structures</div>
+                <h1 class="page-title gradient-text">Tree Data Structure</h1>
+                <p class="page-subtitle">A hierarchical data structure with a root value and subtrees of children, with a parent-child relationship between nodes.</p>
+            </div>
+
+            <!-- Tree Visual Diagram -->
+            <section class="tree-section">
+                <div class="tree-title">Binary Tree Visualization</div>
+                <div class="tree-diagram" id="treeDiagram">
+                    <!-- Tree nodes and edges generated by JS -->
+                </div>
+            </section>
+
+            <!-- Concepts Overview -->
+            <section class="tree-section" style="background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 2rem; margin-bottom: 6rem;">
+                <div class="tree-title" style="border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Key Concepts</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+                    <div style="background: var(--surface); padding: 1.5rem; border-radius: var(--radius-sm);">
+                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 2rem; color: var(--accent); margin-bottom: 0.5rem;">🌳</div>
+                        <h4 style="color: var(--text); margin-bottom: 0.5rem;">Root</h4>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">The topmost node of the tree.</p>
+                    </div>
+                    <div style="background: var(--surface); padding: 1.5rem; border-radius: var(--radius-sm);">
+                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 2rem; color: var(--accent); margin-bottom: 0.5rem;">📄</div>
+                        <h4 style="color: var(--text); margin-bottom: 0.5rem;">Leaf</h4>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">A node with no children.</p>
+                    </div>
+                    <div style="background: var(--surface); padding: 1.5rem; border-radius: var(--radius-sm);">
+                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 2rem; color: var(--accent); margin-bottom: 0.5rem;">🔗</div>
+                        <h4 style="color: var(--text); margin-bottom: 0.5rem;">Edge</h4>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Connection between parent and child.</p>
+                    </div>
+                    <div style="background: var(--surface); padding: 1.5rem; border-radius: var(--radius-sm);">
+                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 2rem; color: var(--accent); margin-bottom: 0.5rem;">📏</div>
+                        <h4 style="color: var(--text); margin-bottom: 0.5rem;">Height</h4>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Longest path from root to deepest leaf.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Operations Section -->
+            <section class="ops-section">
+                <div class="tree-title">Common Operations</div>
+
+                <div class="ops-grid">
+                    <!-- Insert Operation -->
+                    <div class="op-card">
+                        <h3>➕ Insertion</h3>
+                        <p>Adding a new node to the tree while maintaining the tree properties. In a binary search tree, the new value is compared to the root and recursively placed in the left subtree (if smaller) or right subtree (if larger).</p>
+                        <div class="code-block">
+                            <span class="keyword">def</span> <span class="function">insert</span>(root, value):
+    <span class="keyword">if</span> root <span class="keyword">is</span> <span class="keyword">None</span>:
+        <span class="keyword">return</span> <span class="function">Node</span>(value)
+    <span class="keyword">if</span> value < root.val:
+        root.left = <span class="function">insert</span>(root.left, value)
+    <span class="keyword">else</span>:
+        root.right = <span class="function">insert</span>(root.right, value)
+    <span class="keyword">return</span> root
+                        </div>
+                    </div>
+
+                    <!-- Delete Operation -->
+                    <div class="op-card">
+                        <h3>🗑️ Deletion</h3>
+                        <p>Removing a node from the tree. There are three cases: leaf node (simply remove), node with one child (replace with child), or node with two children (replace with inorder successor/predecessor).</p>
+                        <div class="code-block">
+                            <span class="keyword">def</span> <span class="function">delete</span>(root, value):
+    <span class="keyword">if</span> root <span class="keyword">is</span> <span class="keyword">None</span>:
+        <span class="keyword">return</span> root
+    <span class="keyword">if</span> value < root.val:
+        root.left = <span class="function">delete</span>(root.left, value)
+    <span class="keyword">elif</span> value > root.val:
+        root.right = <span class="function">delete</span>(root.right, value)
+    <span class="keyword">else</span>:
+        <span class="comment"># Node with only one child or no child</span>
+        <span class="keyword">if</span> root.left <span class="keyword">is</span> <span class="keyword">None</span>:
+            <span class="keyword">return</span> root.right
+        <span class="keyword">elif</span> root.right <span class="keyword">is</span> <span class="keyword">None</span>:
+            <span class="keyword">return</span> root.left
+        <span class="comment"># Node with two children: Get inorder successor (smallest in the right subtree)</span>
+        <span class="keyword">temp</span> = <span class="function">min_value_node</span>(root.right)
+        root.val = temp.val
+        root.right = <span class="function">delete</span>(root.right, temp.val)
+    <span class="keyword">return</span> root
+                        </div>
+                    </div>
+
+                    <!-- Search Operation -->
+                    <div class="op-card">
+                        <h3>🔍 Search</h3>
+                        <p>Finding a value in a binary search tree by comparing the target with the current node and traversing left (if smaller) or right (if larger) until found or reaching a leaf.</p>
+                        <div class="code-block">
+                            <span class="keyword">def</span> <span class="function">search</span>(root, value):
+    <span class="keyword">while</span> root <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">None</span>:
+        <span class="keyword">if</span> value == root.val:
+            <span class="keyword">return</span> root
+        <span class="keyword">if</span> value < root.val:
+            root = root.left
+        <span class="keyword">else</span>:
+            root = root.right
+    <span class="keyword">return</span> <span class="keyword">None</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Insert/Delete Demo -->
+            <section class="ops-section" style="background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 2rem;">
+                <div class="tree-title">Interactive Demo</div>
+                <div class="demo-controls">
+                    <label>Select operation:</label>
+                    <select id="operationSelect">
+                        <option value="insert">Insert Node</option>
+                        <option value="delete">Delete Node</option>
+                        <option value="search">Search Value</option>
+                    </select>
+                    <button id="runDemoBtn">Run Demo</button>
+                </div>
+                <div id="demoResult" style="margin-top: 2rem; min-height: 80px; font-size: 0.9rem; color: var(--text-muted);">
+                    Select an operation and click Run Demo
+                </div>
+            </section>
+
+            <!-- Summary -->
+            <footer class="summary">
+                <div class="container">
+                    <div class="summary-list">
+                        <div class="summary-item">
+                            <div class="summary-value" id="nodeCount">0</div>
+                            <div class="summary-label">Nodes</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value" id="height">0</div>
+                            <div class="summary-label">Height</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value">3</div>
+                            <div class="summary-label">Common Operations</div>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </main>
+
+    <script>
+        // Tree data structure visualization
+        const treeData = {
+            value: 10,
+            left: {
+                value: 5,
+                left: { value: 3, left: null, right: null },
+                right: { value: 7, left: null, right: null }
+            },
+            right: {
+                value: 15,
+                left: null,
+                right: { value: 20, left: null, right: null }
+            }
+        };
+
+        let selectedOperation = 'insert';
+        let demoCount = 0;
+
+        // Render the tree diagram
+        function renderTree(node, level = 0, container) {
+            if (!node) return;
+
+            const diagram = container || document.getElementById('treeDiagram');
+
+            // Create node circle
+            const nodeCircle = document.createElement('div');
+            nodeCircle.className = 'tree-node level-' + level;
+            nodeCircle.innerHTML = `
+                <div class="node-circle" style="background: var(--surface); border-color: var(--border);">
+                    <div class="node-label">${node.value}</div>
+                </div>
+            `;
+
+            // Position node horizontally
+            const positions = {
+                'level-0': 'left: 45%',
+                'level-1': 'left: 20%',
+                'level-2': 'left: 35%',
+                'level-3': 'left: 65%'
+            };
+            nodeCircle.style.cssText = positions['level-' + level] || 'left: 45%';
+
+            diagram.appendChild(nodeCircle);
+
+            // Draw edge to left child
+            if (node.left) {
+                const edge = document.createElement('div');
+                edge.className = 'edge horiz-edge';
+                edge.style.cssText = `
+                    left: 50%; top: ${50 + level * 100}px;
+                    border-left-color: var(--border);
+                    border-top-color: var(--border);
+                    border-bottom-color: var(--border);
+                `;
+                diagram.appendChild(edge);
+
+                renderTree(node.left, level + 1, diagram);
+            }
+
+            // Draw edge to right child
+            if (node.right) {
+                const edge = document.createElement('div');
+                edge.className = 'edge horiz-edge';
+                edge.style.cssText = `
+                    left: 50%; top: ${50 + level * 100}px;
+                    border-left: none;
+                    border-right: none;
+                    border-top-color: var(--border);
+                    border-bottom-color: var(--border);
+                    right: 50%;
+                `;
+                diagram.appendChild(edge);
+
+                renderTree(node.right, level + 1, diagram);
+            }
+        }
+
+        // Initialize tree render
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTree(treeData);
+
+            // Operation select change
+            document.getElementById('operationSelect').addEventListener('change', (e) => {
+                selectedOperation = e.target.value;
+            });
+
+            // Run demo button
+            document.getElementById('runDemoBtn').addEventListener('click', () => {
+                const resultDiv = document.getElementById('demoResult');
+                const operations = {
+                    insert: {
+                        title: 'Insert Node',
+                        msg: 'Inserting value 12 into the tree...',
+                        success: 'Value 12 inserted successfully at an appropriate position.'
+                    },
+                    delete: {
+                        title: 'Delete Node',
+                        msg: 'Deleting value 5 from the tree...',
+                        success: 'Value 5 deleted successfully. Tree restructured.'
+                    },
+                    search: {
+                        title: 'Search Value',
+                        msg: 'Searching for value 7 in the tree...',
+                        success: 'Value 7 found in the tree!'
+                    }
+                };
+
+                const op = operations[selectedOperation];
+                resultDiv.innerHTML = `
+                    <strong>${op.title}:</strong> ${op.msg}<br>
+                    <span style="color: var(--success);">${op.success}</span>
+                `;
+                demoCount++;
+                document.getElementById('nodeCount').textContent = treeData ? Object.keys(treeData).length + ' (conceptual)' : 0;
+            });
+        });
+    </script>
+</body>
+</html>

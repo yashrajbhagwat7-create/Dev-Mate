@@ -3,10 +3,10 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.11+" />
   <img src="https://img.shields.io/badge/Security-Hardened-059669?style=for-the-badge&logo=shield&logoColor=white" alt="Security Hardened" />
-  <img src="https://img.shields.io/badge/Tests-92%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests Passed" />
+  <img src="https://img.shields.io/badge/Tests-128%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests Passed" />
   <img src="https://img.shields.io/badge/Multi--Agent-Swarm%20%26%20Delegation-EC4899?style=for-the-badge&logo=probot&logoColor=white" alt="Multi-Agent Swarm" />
   <img src="https://img.shields.io/badge/Context-Antigravity%20Compacted-8B5CF6?style=for-the-badge&logo=fastapi&logoColor=white" alt="Context Optimizer" />
-  <img src="https://img.shields.io/badge/Providers-Google%20Gemini%20%2B%20OpenRouter-6366F1?style=for-the-badge&logo=google&logoColor=white" alt="Providers" />
+  <img src="https://img.shields.io/badge/Providers-Gemini%20%2B%20OpenRouter%20%2B%20Ollama-6366F1?style=for-the-badge&logo=google&logoColor=white" alt="Providers" />
   <img src="https://img.shields.io/badge/OS-Windows%20%7C%20Linux%20%7C%20macOS-0284C7?style=for-the-badge" alt="Platform" />
   <img src="https://img.shields.io/badge/License-MIT-F59E0B?style=for-the-badge" alt="License" />
 </p>
@@ -62,6 +62,8 @@ A lightweight, security-first, multi-provider **AI Software Engineering Agent** 
 ---
 
 ## 🛠️ Architecture Workflow
+
+> 📖 **Comprehensive System Architecture**: For detailed component deep-dives, sequence diagrams, risk classification matrices, and security models, see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ```mermaid
 flowchart TD
@@ -176,14 +178,26 @@ Inside the interactive `devmate ❯` prompt:
 | Command | Action |
 | :--- | :--- |
 | `/team <goal>` | Run collaborative multi-agent deliberation between Google Gemini & OpenRouter |
+| `/plan <goal>` | Formulate structured, non-destructive implementation plan before modifying files |
 | `/review [path]` | Delegate an independent cross-model peer review of a file or git diff |
+| `/test [target]` | Run pytest suite directly from terminal with structured failure breakdown |
+| `/syntax <path>` | Validate syntax (Python AST, JSON, TOML, MD, HTML) without executing code |
+| `/refs <sym> [p]`| Locate all AST references, usages, and call sites of a symbol across project |
+| `/deps [path]` | Analyze module import graph, third-party packages, and detect circular dependencies |
+| `/audit [path]` | Export full session activity and backup history to formatted markdown audit report |
+| `/outline <path>` | Inspect high-level file structural outline (classes, methods, docstrings via AST) |
+| `/undo` | Revert the most recent file mutation from timestamped backup |
+| `/rollback <path>` | Restore a specific file from its latest backup snapshot |
+| `/doctor` | Run comprehensive health check on environment, git, and AI providers |
+| `/report` | Export session audit trail, architectural decisions, and memory report |
 | `/file <path> [prompt]` | Read an entire text file from disk directly as your prompt |
 | `@filepath` (inline) | Reference any file inline to inject its contents into the prompt |
 | `/paste` | Enter multi-line paste mode (paste massive text, type `:end` to submit) |
 | `/editor` | Open external editor (Notepad/nano) to write or paste large prompts |
 | `/tokens` | Display session token usage, API calls, and compaction savings |
 | `/lint <path> [--fix]` | Lint document/report for tables, styles, & placeholders (with auto-fix) |
-| `/provider <name>` | Switch model provider (`openrouter` \| `google`) |
+| `/clear` | Clear terminal screen buffer |
+| `/provider <name>` | Switch model provider (`openrouter` \| `google` \| `ollama`) |
 | `/mode <name>` | Switch active mode (`ask` \| `edit` \| `engineer` \| `autonomous`) |
 | `/status` | View git working tree status |
 | `/diff` | View syntax-highlighted git diff |
@@ -202,7 +216,13 @@ Run the comprehensive test suite:
 pytest -v
 ```
 
-All 92 test cases verify:
+All 115 test cases verify:
+- AST structural code outliner (`view_outline`) and exact symbol lookup (`get_definition`)
+- Reversible file mutations (`replace_lines`, `rollback_file`, `undo_last_change`)
+- Network resilience with exponential backoff retry on HTTP 429 rate limits and 5xx errors
+- Local and OpenAI-compatible endpoint compatibility (`ollama`, `local`, custom base URLs)
+- Interactive CLI slash command dispatching (`/undo`, `/outline`, `/report`, `/mode`)
+- Agent ReAct core loop, autonomous engineering iterations, and unknown tool fallbacks
 - Document & Report Quality Linter & table auto-repair (`devmate/design.py`, `lint_document`)
 - Color token contrast calculation & WCAG AA / AAA compliance
 - Institutional color themes (`Academic Navy`, `Emerald Tech`, `Crimson Executive`, `Slate Minimal`)
